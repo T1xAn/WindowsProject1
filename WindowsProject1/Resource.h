@@ -12,6 +12,7 @@
 #define IDI_WINDOWSPROJECT1			107
 #define IDI_SMALL				108
 #define IDC_WINDOWSPROJECT1			109
+//#define IDC_LEFTWINDOW			110
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
