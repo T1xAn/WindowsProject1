@@ -12,22 +12,30 @@
 HINSTANCE hInst;                                // текущий экземпляр
 WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
 WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
+HWND leftText;                                  // Левое дочернее окно
+WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
+WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
+
 static HWND search;
 static HWND textbox;
 static HWND ReadButton;
 
-static HWND leftText;
-//WCHAR lsWindowClass[MAX_LOADSTRING];
 
+////
  OPENFILENAME File;
-
  wchar_t buf[100];
  std::wifstream HexFile;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
+ATOM            LTRegisterClass(HINSTANCE hInstance);
+LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+//
+// Функция buttonGetFile(OPENFILENAME F) 
+//  Позволяет произвести поиск нужного файла через провдник
+//  return Возвращает рассположение файла на компьютере
 LPWSTR buttonGetFile(OPENFILENAME F) {
     wchar_t szFile[1000];
     ZeroMemory(&File, sizeof(File));
@@ -47,25 +55,7 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
     return F.lpstrFile;
 }
-//ATOM LeftRegisterClass(HINSTANCE hInstance) {
-//    WNDCLASSEXW wcex;
-//
-//    wcex.cbSize = sizeof(WNDCLASSEX);
-//
-//    wcex.style = CS_HREDRAW | CS_VREDRAW;
-//    wcex.lpfnWndProc = WndProc;
-//    wcex.cbClsExtra = 0;
-//    wcex.cbWndExtra = 0;
-//    wcex.hInstance = hInstance;
-//    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
-//    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-//    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-//    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT1);
-//    wcex.lpszClassName = szWindowClass;
-//    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-//
-//    return RegisterClassExW(&wcex);
-//}
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -80,8 +70,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_WINDOWSPROJECT1, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
-   // LoadStringW(hInstance, IDC_LEFTWINDOW, lsWindowClass, MAX_LOADSTRING);
-   // LeftRegisterClass(hInstance);
+  
+    LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_LEFTTEXT, ltWindowClass, MAX_LOADSTRING);
+    LTRegisterClass(hInstance);
 
     // Выполнить инициализацию приложения:
     if (!InitInstance (hInstance, nCmdShow))
@@ -92,7 +84,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
 
     MSG msg;
-
+  
     // Цикл основного сообщения:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -134,6 +126,29 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
+ATOM LTRegisterClass(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex1;
+
+    wcex1.cbSize = sizeof(WNDCLASSEX);
+
+    wcex1.style = CS_NOCLOSE;
+    wcex1.lpfnWndProc = LeftProc;
+    wcex1.cbClsExtra = 0;
+    wcex1.cbWndExtra = 0;
+    wcex1.hInstance = hInstance;
+    wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
+    wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LEFTTEXT);
+    wcex1.lpszClassName = ltWindowClass;
+    wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    /*if (!&wcex1) return false;
+
+    DWORD  error = GetLastError();*/
+    return RegisterClassExW(&wcex1);
+}
+
 //
 //   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
 //
@@ -157,10 +172,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
         WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)1001, hInstance, nullptr);
-    RECT rect;
+   RECT rect;
     GetClientRect(hWnd, &rect);
-  HWND leftText = CreateWindowW(szWindowClass, nullptr,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
+   leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
       0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
+
     
    if (!hWnd)
    {
@@ -193,13 +209,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_SIZE:
+   /* case WM_SIZE:
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
         MoveWindow(leftText, 0, 80, rc.right / 2, rc.bottom - 80, FALSE);
         break;
-    }
+    }*/
     case WM_COMMAND:
         {
             //size_t result;
@@ -224,11 +240,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (!HexFile.is_open()) {
                     MessageBox(NULL, L"ERROR", L"Load File", MB_OK);
                 }
-               // HexFile >> std::hex >> buf;
-                HexFile >> buf;
-                ///////////////
-                InvalidateRect(hWnd, NULL,FALSE);
-                UpdateWindow(hWnd);
+                while (!HexFile.eof()) {
+                    // HexFile >> std::hex >> buf;
+                    HexFile >> buf;
+                    ///////////////
+                   //SetTextAlign(, TA_UPDATECP)
+                    InvalidateRect(leftText, NULL, FALSE);
+                    UpdateWindow(hWnd);
+                }
                 HexFile.close();
                 break;
 
@@ -250,8 +269,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = BeginPaint(hWnd, &ps);
             /////////////
             RECT rect;
-            GetClientRect(hWnd, &rect);
-            DrawTextW(hdc,buf, -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+            /*GetClientRect(hWnd, &rect);
+            DrawTextW(hdc,L"Вывело", -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
             //TextOutA(hdc, 200, 200,L"rery", 4);
             // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
             EndPaint(hWnd, &ps);
@@ -265,6 +284,60 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+
+//
+//  ФУНКЦИЯ: LeftProc(HWND, UINT, WPARAM, LPARAM)
+//
+//  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
+//
+//  WM_COMMAND  - обработать меню приложения
+//  WM_PAINT    - Отрисовка главного окна
+//  WM_DESTROY  - отправить сообщение о выходе и вернуться
+//
+//
+LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    RECT rect;
+    switch (message)
+    {
+    case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Разобрать выбор в меню:
+        switch (wmId)
+        {
+        case IDM_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    }
+    break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+       /* GetClientRect(hWnd, &rect);
+        DrawTextW(hdc, buf, -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
+        //UINT a = GetTextAlign(hdc);
+        TextOutW(hdc, 20,20, buf, wcslen(buf));
+        // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
 
 // Обработчик сообщений для окна "О программе".
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
