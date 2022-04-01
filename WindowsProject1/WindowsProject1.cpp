@@ -6,7 +6,7 @@
 
 #define MAX_LOADSTRING 100
 
-
+DWORD error;
 // Глобальные переменные:
 
 HINSTANCE hInst;                                // текущий экземпляр
@@ -22,9 +22,12 @@ static HWND ReadButton;
 
 
 ////
+HDC hdcLF;
  OPENFILENAME File;
  wchar_t buf[100];
- std::wifstream HexFile;
+ HANDLE LeftFile_a;
+ HANDLE LeftFile;
+ char* LRFILE;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -111,7 +114,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.style = NULL;//CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc    = WndProc;
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
@@ -228,27 +231,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
             case 1000:
                 fn = buttonGetFile(File);
-               // if(fn != L"\0")
                 Edit_SetText(textbox, fn);
-                // result = (size_t)ShellExecuteW(0, L"open", L"explorer.exe", NULL, NULL, SW_HIDE);
                 break;
             case 1001:
+                
                 wchar_t fn1[1000];
                 Edit_GetText(textbox,fn1 , 1000);
-                MessageBox(NULL, fn1, L"File Name in TextBox", MB_OK);
-                HexFile.open(fn1); 
-                if (!HexFile.is_open()) {
-                    MessageBox(NULL, L"ERROR", L"Load File", MB_OK);
+                MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
+                LeftFile_a =  CreateFile(fn1,GENERIC_READ,FILE_SHARE_READ, NULL,OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,NULL);
+                LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY,0, 0,NULL);
+                LRFILE = (char*) MapViewOfFile(LeftFile,FILE_MAP_READ,0,0,0);
+                hdcLF = GetDC(leftText);
+                ///*buf[2];
+                //buf[0] = ;*/
+                //buf[1] = '\0';
+                for (int i = 0; i < 16; i = i+2) {
+                   
+                    TextOutA(hdcLF, 20 + i, 20, (LPCSTR)LRFILE, strlen(LRFILE));
+                  
                 }
-                while (!HexFile.eof()) {
-                    // HexFile >> std::hex >> buf;
-                    HexFile >> buf;
-                    ///////////////
-                   //SetTextAlign(, TA_UPDATECP)
-                    InvalidateRect(leftText, NULL, FALSE);
-                    UpdateWindow(hWnd);
-                }
-                HexFile.close();
+                ReleaseDC(leftText, hdcLF);
+
+                
+
+                UnmapViewOfFile(LRFILE);
+                CloseHandle(LeftFile);
+                CloseHandle(LeftFile_a);
+                UpdateWindow(leftText);
                 break;
 
             case IDM_ABOUT:
@@ -324,8 +333,8 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
        /* GetClientRect(hWnd, &rect);
         DrawTextW(hdc, buf, -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
         //UINT a = GetTextAlign(hdc);
-        TextOutW(hdc, 20,20, buf, wcslen(buf));
-        // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
+        //TextOutA(hdc, 20,20, buf, wcslen(buf));
+        // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);
     }
     break;
