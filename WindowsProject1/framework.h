@@ -15,8 +15,10 @@
 #include <tchar.h>
 #include <commdlg.h>
 #include <windowsx.h>
+//
 #include <fstream>
 //
 #include <shellapi.h>
 
+#include <sstream>
 #include <commctrl.h>

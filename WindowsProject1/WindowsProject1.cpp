@@ -27,7 +27,7 @@ HDC hdcLF;
  wchar_t buf[100];
  HANDLE LeftFile_a;
  HANDLE LeftFile;
- char* LRFILE;
+ //PBYTE LRFILE;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -57,6 +57,18 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     GetOpenFileName(&F);
     MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
     return F.lpstrFile;
+}
+
+std::string GetEightBitsHex(HANDLE LeftFile, DWORD move) {
+    std::stringstream ss;
+    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, (move & 0xFFFFFFFF), 8);
+    DWORD error = GetLastError();
+    ss << std::hex;
+    ss << (DWORD)move << ": ";
+    for (int i=0; i < 8; i++)
+        ss << (int)LRFILE[i] << " ";
+    UnmapViewOfFile(LRFILE);
+    return ss.str();
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -225,8 +237,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             
             int wmId = LOWORD(wParam);
             // Разобрать выбор в меню:
-            LPWSTR fn;
-            
+            LPWSTR fn; 
+            DWORD LFSIZE; 
+            int height = 0;
+            std::string ss;
+            SYSTEM_INFO siSysInfo;
+            GetSystemInfo(&siSysInfo);
             switch (wmId)
             {
             case 1000:
@@ -240,21 +256,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
                 LeftFile_a =  CreateFile(fn1,GENERIC_READ,FILE_SHARE_READ, NULL,OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,NULL);
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY,0, 0,NULL);
-                LRFILE = (char*) MapViewOfFile(LeftFile,FILE_MAP_READ,0,0,0);
-                hdcLF = GetDC(leftText);
-                ///*buf[2];
-                //buf[0] = ;*/
-                //buf[1] = '\0';
-                for (int i = 0; i < 16; i = i+2) {
-                   
-                    TextOutA(hdcLF, 20 + i, 20, (LPCSTR)LRFILE, strlen(LRFILE));
+                /*LRFILE = (PBYTE) MapViewOfFile(LeftFile,FILE_MAP_READ,0,0,0);
+              
+                
+                ss << std::hex;
+                for (int i(0); i < 8; ++i)
+                    ss << (int)LRFILE[i] << " ";*/
+              
+                  hdcLF = GetDC(leftText);
                   
+                  LFSIZE = GetFileSize(LeftFile_a, NULL);
+                for (DWORD i = 0; i < LFSIZE; i += 8) {
+                   
+                    ss = GetEightBitsHex(LeftFile, i);
+                    TextOutA(hdcLF, 20 , 20+height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
+                    height++;
                 }
                 ReleaseDC(leftText, hdcLF);
-
-                
-
-                UnmapViewOfFile(LRFILE);
+                //UnmapViewOfFile(LRFILE);
                 CloseHandle(LeftFile);
                 CloseHandle(LeftFile_a);
                 UpdateWindow(leftText);
