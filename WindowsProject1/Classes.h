@@ -1,6 +1,7 @@
 #pragma once
-class Pointer {
+
+class File_offset_inf{
 public:
-	int vertical_string_point;
-	int Horizontal_string_position;
+	DWORD sysGranularity;
+	DWORD Horizontal_string_position;
 };

@@ -59,12 +59,16 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     return F.lpstrFile;
 }
 
-std::string GetEightBitsHex(HANDLE LeftFile, DWORD move) {
+std::string GetEightBitsHex(HANDLE LeftFile, DWORD Granularity , DWORD ViewStart) {
     std::stringstream ss;
-    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, (move & 0xFFFFFFFF), 8);
+    SIZE_T B = 8;
+    DWORD OFFSET = (ViewStart / Granularity) * Granularity;
+    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0,  OFFSET, B);
+    //int OFFSET2 = (ViewStart - (ViewStart / Granularity) * Granularity);
+   // char* Data = (char*) LRFILE + OFFSET2;
     DWORD error = GetLastError();
     ss << std::hex;
-    ss << (DWORD)move << ": ";
+    ss << ViewStart << ": ";
     for (int i=0; i < 8; i++)
         ss << (int)LRFILE[i] << " ";
     UnmapViewOfFile(LRFILE);
@@ -239,46 +243,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Разобрать выбор в меню:
             LPWSTR fn; 
             DWORD LFSIZE; 
+            //File_offset_inf LFOFFSET;
             int height = 0;
             std::string ss;
-            SYSTEM_INFO siSysInfo;
-            GetSystemInfo(&siSysInfo);
             switch (wmId)
             {
             case 1000:
                 fn = buttonGetFile(File);
                 Edit_SetText(textbox, fn);
                 break;
-            case 1001:
-                
+            case 1001: {
+
                 wchar_t fn1[1000];
-                Edit_GetText(textbox,fn1 , 1000);
+                Edit_GetText(textbox, fn1, 1000);
+                SYSTEM_INFO SYSINF;
+                GetSystemInfo(&SYSINF);
+                DWORD LFGranularity = SYSINF.dwAllocationGranularity;
+               
+                hdcLF = GetDC(leftText);
                 MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
-                LeftFile_a =  CreateFile(fn1,GENERIC_READ,FILE_SHARE_READ, NULL,OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,NULL);
-                LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY,0, 0,NULL);
-                /*LRFILE = (PBYTE) MapViewOfFile(LeftFile,FILE_MAP_READ,0,0,0);
-              
-                
-                ss << std::hex;
-                for (int i(0); i < 8; ++i)
-                    ss << (int)LRFILE[i] << " ";*/
-              
-                  hdcLF = GetDC(leftText);
-                  
-                  LFSIZE = GetFileSize(LeftFile_a, NULL);
+                LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                LFSIZE = GetFileSize(LeftFile_a, NULL);
+ /*               DWORD FileMapStart = (LFSIZE / LFGranularity)*LFGranularity;
+                DWORD LFViewSize = (LFSIZE%LFGranularity)+8;
+                DWORD LFMapSize = LFSIZE + 8;
+                DWORD LFViewDataS = LFSIZE - FileMapStart;*/
+                LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
                 for (DWORD i = 0; i < LFSIZE; i += 8) {
-                   
-                    ss = GetEightBitsHex(LeftFile, i);
-                    TextOutA(hdcLF, 20 , 20+height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
-                    height++;
+
+                    ss = GetEightBitsHex(LeftFile, LFGranularity, i);
+                    TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
+                    height += 20;
                 }
                 ReleaseDC(leftText, hdcLF);
-                //UnmapViewOfFile(LRFILE);
-                CloseHandle(LeftFile);
+                CloseHandle(LeftFile); 
                 CloseHandle(LeftFile_a);
                 UpdateWindow(leftText);
                 break;
-
+            }
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
