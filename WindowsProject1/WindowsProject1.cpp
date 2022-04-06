@@ -55,25 +55,64 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     F.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     GetOpenFileName(&F);
-    MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
+    //MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
     return F.lpstrFile;
 }
-
-std::string GetEightBitsHex(HANDLE LeftFile, DWORD Granularity , DWORD ViewStart) {
+BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
     std::stringstream ss;
-    SIZE_T B = 8;
-    DWORD OFFSET = (ViewStart / Granularity) * Granularity;
-    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0,  OFFSET, B);
-    //int OFFSET2 = (ViewStart - (ViewStart / Granularity) * Granularity);
-   // char* Data = (char*) LRFILE + OFFSET2;
-    DWORD error = GetLastError();
-    ss << std::hex;
-    ss << ViewStart << ": ";
-    for (int i=0; i < 8; i++)
-        ss << (int)LRFILE[i] << " ";
-    UnmapViewOfFile(LRFILE);
-    return ss.str();
+    DWORD OFFSET = 0, Block = 0, height = 0;
+    
+    hdcLF = GetDC(leftText);
+    while (FileSize > 0) { 
+        Block = Granularity;
+        if (Block > FileSize);
+            Block = FileSize;
+        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, FileSize);
+      // if (LRFILE == NULL) {MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при создании проекции:", MB_OK); return FALSE; }
+        DWORD i = 0;
+        while (i  < Block) {
+            ss << std::hex;
+            ss << i+OFFSET << " | ";
+            for (int j = 0; j < 8; j++) {
+                    ss << (int)LRFILE[i] << " ";
+                    i++;
+             }
+            ss << " | ";
+                for(DWORD j = i - 8; j < i; j++) {
+                    ss << std::dec << LRFILE[j] << " ";
+            }
+           TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
+            height += 20;
+            ss.str("");
+        }
+       
+        FileSize -= Block;
+        OFFSET += Block;
+        UnmapViewOfFile(LRFILE);
+    }
+    MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
+    return true;
 }
+//std::string GetEightBitsHex(HANDLE LeftFile, DWORD Granularity , DWORD ViewStart) {
+//    std::stringstream ss;
+//   // DWORD Block = Granularity;
+//    // if (Block > FileSize);
+//    // Block = FileSize;
+//    DWORD OFFSET = (ViewStart / Granularity) * Granularity;
+//    // if (OFFSET == 0) OFFSET = ViewStart;
+//    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0,  OFFSET, Granularity);
+//    //int OFFSET2 = (ViewStart - (ViewStart / Granularity) * Granularity);
+//    // char* Data = (char*) LRFILE + OFFSET2;
+//    DWORD error = GetLastError();
+//    ss << std::hex;
+//    //ss << ViewStart << ": ";
+//    for (int i=0; i < 8; i++)
+//        ss << (int)LRFILE[i] << " ";
+//    UnmapViewOfFile(LRFILE);
+//    /*OFFSET += Block;
+//    FileSize -= Block;*/
+//    return ss.str();
+//}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -195,7 +234,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     GetClientRect(hWnd, &rect);
    leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
       0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
-
+   CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL, 0, 0, 0, 0, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);
+    //leftText = CreateMDIWindowA("edit",  );
     
    if (!hWnd)
    {
@@ -242,9 +282,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             int wmId = LOWORD(wParam);
             // Разобрать выбор в меню:
             LPWSTR fn; 
-            DWORD LFSIZE; 
+           // DWORD LFSIZE; 
             //File_offset_inf LFOFFSET;
-            int height = 0;
+            //int height = 0;
             std::string ss;
             switch (wmId)
             {
@@ -253,7 +293,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Edit_SetText(textbox, fn);
                 break;
             case 1001: {
-
+                InvalidateRect(leftText, NULL, TRUE);
+                UpdateWindow(leftText);
                 wchar_t fn1[1000];
                 Edit_GetText(textbox, fn1, 1000);
                 SYSTEM_INFO SYSINF;
@@ -261,24 +302,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DWORD LFGranularity = SYSINF.dwAllocationGranularity;
                
                 hdcLF = GetDC(leftText);
-                MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
+                //MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
                 LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-                LFSIZE = GetFileSize(LeftFile_a, NULL);
+                if (LeftFile_a == NULL) { MessageBox(NULL, (wchar_t*)GetLastError() , L"Произошла ошибка при открытии файла:", MB_OK); break; }
+                _int64 LFSIZE = GetFileSize(LeftFile_a, NULL);
  /*               DWORD FileMapStart = (LFSIZE / LFGranularity)*LFGranularity;
                 DWORD LFViewSize = (LFSIZE%LFGranularity)+8;
                 DWORD LFMapSize = LFSIZE + 8;
                 DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-                for (DWORD i = 0; i < LFSIZE; i += 8) {
+                if (LeftFile == NULL) { MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при открытии файла:", MB_OK); break; }
+                //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
+              /*  DWORD OFFSET = 0;
+                while(LFSIZE > 0)*/
+                   GetEightBitsHex(LeftFile, LFGranularity, LFSIZE);
+                   // TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
+                   // height += 20;
 
-                    ss = GetEightBitsHex(LeftFile, LFGranularity, i);
-                    TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
-                    height += 20;
-                }
+                //}
                 ReleaseDC(leftText, hdcLF);
                 CloseHandle(LeftFile); 
                 CloseHandle(LeftFile_a);
-                UpdateWindow(leftText);
+               
                 break;
             }
             case IDM_ABOUT:
