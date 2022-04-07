@@ -277,13 +277,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-   /* case WM_SIZE:
+    case WM_SIZE:
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
         MoveWindow(leftText, 0, 80, rc.right / 2, rc.bottom - 80, FALSE);
         break;
-    }*/
+    }
     case WM_COMMAND:
         {
             //size_t result;
