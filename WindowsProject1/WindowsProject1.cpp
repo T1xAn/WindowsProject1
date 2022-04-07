@@ -77,10 +77,17 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
                     ss << (int)LRFILE[i] << " ";
                     i++;
              }
+            ss << (int)LRFILE[i] << " " << (int)LRFILE[i+1] << " " << (int)LRFILE[i+2] << " " << (int)LRFILE[i+3] << " " << (int)LRFILE[i+4] << " " << (int)LRFILE[i+5] << " " << (int)LRFILE[i+6] << " " << (int)LRFILE[i+7] << " ";
             ss << " | ";
+            
                 for(DWORD j = i - 8; j < i; j++) {
                     ss << std::dec << LRFILE[j] << " ";
             }
+          /*  int j = i;
+            i += 8;
+            ss << std::dec << (int)LRFILE[j] << " " << (int)LRFILE[j + 1] << " " << (int)LRFILE[j + 2] << " " << (int)LRFILE[j + 3] << " " << (int)LRFILE[j + 4] << " " << (int)LRFILE[j + 5] << " " << (int)LRFILE[j + 6] << " " << (int)LRFILE[j + 7] << " " << std::endl;
+                SetWindowTextA(leftText, (LPCSTR)ss.str().c_str());
+                UpdateWindow(leftText);*/
            TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
             height += 20;
             ss.str("");
@@ -234,9 +241,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     GetClientRect(hWnd, &rect);
    leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
       0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
-   CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL, 0, 0, 0, 0, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);
-    //leftText = CreateMDIWindowA("edit",  );
-    
+  /*leftText =  CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_UPPERCASE, 0, 80, 1000, 800, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);*/
+  /*  leftText = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
+       WS_CHILD | WS_VISIBLE, 0, 80, 1000,
+       800, hWnd, NULL, NULL, NULL);
+    */
    if (!hWnd)
    {
       return FALSE;
