@@ -13,13 +13,15 @@ HINSTANCE hInst;                                // текущий экземпл
 WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
 WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
 HWND leftText;                                  // Левое дочернее окно
-WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
+// ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
 WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
+WCHAR ltMDIWindowClass[MAX_LOADSTRING];
 
 static HWND search;
 static HWND textbox;
 static HWND ReadButton;
-
+HWND hWnd;
+HWND ClientWind;
 
 ////
 HDC hdcLF;
@@ -31,9 +33,13 @@ HDC hdcLF;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
-ATOM            LTRegisterClass(HINSTANCE hInstance);
+//ATOM            LTRegisterClass(HINSTANCE hInstance);
+ATOM            ChildMDIRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
+
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    MDILEFTCHILD(HWND, UINT, WPARAM, LPARAM);
+
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 //
 // Функция buttonGetFile(OPENFILENAME F) 
@@ -58,6 +64,7 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     //MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
     return F.lpstrFile;
 }
+
 BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
     std::stringstream ss;
     DWORD OFFSET = 0, Block = 0, height = 0;
@@ -93,27 +100,6 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
     MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
     return true;
 }
-//std::string GetEightBitsHex(HANDLE LeftFile, DWORD Granularity , DWORD ViewStart) {
-//    std::stringstream ss;
-//   // DWORD Block = Granularity;
-//    // if (Block > FileSize);
-//    // Block = FileSize;
-//    DWORD OFFSET = (ViewStart / Granularity) * Granularity;
-//    // if (OFFSET == 0) OFFSET = ViewStart;
-//    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0,  OFFSET, Granularity);
-//    //int OFFSET2 = (ViewStart - (ViewStart / Granularity) * Granularity);
-//    // char* Data = (char*) LRFILE + OFFSET2;
-//    DWORD error = GetLastError();
-//    ss << std::hex;
-//    //ss << ViewStart << ": ";
-//    for (int i=0; i < 8; i++)
-//        ss << (int)LRFILE[i] << " ";
-//    UnmapViewOfFile(LRFILE);
-//    /*OFFSET += Block;
-//    FileSize -= Block;*/
-//    return ss.str();
-//}
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -129,10 +115,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDC_WINDOWSPROJECT1, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
   
-    LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_LEFTTEXT, ltWindowClass, MAX_LOADSTRING);
-    LTRegisterClass(hInstance);
-
+   // LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
+   // LoadStringW(hInstance, IDC_LEFTTEXT, ltWindowClass, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_LEFTMDIWIND, ltMDIWindowClass,MAX_LOADSTRING);
+   // LTRegisterClass(hInstance);
+    ChildMDIRegisterClass(hInstance);
     // Выполнить инициализацию приложения:
     if (!InitInstance (hInstance, nCmdShow))
     {
@@ -146,7 +133,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Цикл основного сообщения:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (TranslateMDISysAccel(ClientWind, &msg) && !TranslateAccelerator(hWnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -176,37 +163,56 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.hbrBackground  = (HBRUSH)(COLOR_APPWORKSPACE +1);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT1);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
+
     return RegisterClassExW(&wcex);
 }
 
-ATOM LTRegisterClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex1;
+//ATOM LTRegisterClass(HINSTANCE hInstance)
+//{
+//    WNDCLASSEXW wcex1;
+//
+//    wcex1.cbSize = sizeof(WNDCLASSEX);
+//
+//    wcex1.style = CS_NOCLOSE;
+//    wcex1.lpfnWndProc = LeftProc;
+//    wcex1.cbClsExtra = 0;
+//    wcex1.cbWndExtra = 0;
+//    wcex1.hInstance = hInstance;
+//    wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
+//    wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//    wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+//    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LEFTTEXT);
+//    wcex1.lpszClassName = ltWindowClass;
+//    wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+//    /*if (!&wcex1) return false;
+//
+//    DWORD  error = GetLastError();*/
+//    return RegisterClassExW(&wcex1);
+//}
 
+ATOM ChildMDIRegisterClass(HINSTANCE hInstance){
+
+    WNDCLASSEXW  wcex1;
     wcex1.cbSize = sizeof(WNDCLASSEX);
-
-    wcex1.style = CS_NOCLOSE;
-    wcex1.lpfnWndProc = LeftProc;
-    wcex1.cbClsExtra = 0;
-    wcex1.cbWndExtra = 0;
-    wcex1.hInstance = hInstance;
+    wcex1.cbSize = sizeof(WNDCLASSEX);
+    wcex1.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
+    wcex1.lpfnWndProc = MDILEFTCHILD;
     wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
+    wcex1.lpszMenuName = NULL;
     wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LEFTTEXT);
-    wcex1.lpszClassName = ltWindowClass;
-    wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    /*if (!&wcex1) return false;
+    wcex1.cbWndExtra =sizeof(HANDLE);
+    wcex1.lpszClassName = ltMDIWindowClass;
+    //wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex1.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    DWORD  error = GetLastError();*/
+
     return RegisterClassExW(&wcex1);
 }
-
 //
 //   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
 //
@@ -221,8 +227,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE|  WS_CLIPCHILDREN,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN ,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, hInstance, nullptr);
    search = CreateWindowA("button", ">>", WS_CHILD |
        WS_VISIBLE | WS_BORDER, 1050, 20, 30, 30, hWnd, (HMENU)1000, hInstance, nullptr);
     textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
@@ -230,11 +236,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
         WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)1001, hInstance, nullptr);
+   // ClientWind = GetWindow(hWnd, GW_CHILD);
    RECT rect;
     GetClientRect(hWnd, &rect);
-   leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
+   /*leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
       0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
-   CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL, 0, 0, 0, 0, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);
+   CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL, 0, 0, 0, 0, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);*/
     //leftText = CreateMDIWindowA("edit",  );
     
    if (!hWnd)
@@ -242,15 +249,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   if (!leftText)
+  /* if (!leftText)
    {
        return FALSE;
-   }
+   }*/
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
-   ShowWindow(leftText, nCmdShow);
-   UpdateWindow(leftText);
+  // ShowWindow(leftText, nCmdShow);
+   //UpdateWindow(leftText);
    return TRUE;
 }
 
@@ -268,15 +275,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-   /* case WM_SIZE:
+    case WM_CREATE:
     {
-        RECT rc;
-        GetClientRect(hWnd, &rc);
-        MoveWindow(leftText, 0, 80, rc.right / 2, rc.bottom - 80, FALSE);
-        break;
-    }*/
+        CLIENTCREATESTRUCT ccs;
+
+        ccs.hWindowMenu = GetSubMenu(GetMenu(hWnd), WINDOWMENU);
+        ccs.idFirstChild = IDC_FIRSTCHILD;
+        ClientWind = CreateWindow(L"MDICLIENT", (LPCTSTR)NULL,
+            WS_CHILD | WS_CLIPCHILDREN,
+            0, 0, 0, 0, hWnd, (HMENU)0xCAC, hInst, (LPSTR)&ccs);
+        //ShowWindow(ClientWind, SW_SHOW);
+
+        return 0;
+    }
     case WM_COMMAND:
         {
+        HWND Child;
             //size_t result;
             
             int wmId = LOWORD(wParam);
@@ -325,6 +339,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 CloseHandle(LeftFile_a);
                
                 break;
+
+
             }
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -333,7 +349,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DestroyWindow(hWnd);
                 break;
             default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
+                //return DefWindowProc(hWnd, message, wParam, lParam);
+                Child = (HWND)SendMessage(ClientWind,
+                    WM_MDIGETACTIVE, 0, 0);
+                if (IsWindow(Child))
+                    SendMessage(Child, WM_COMMAND,
+                        wParam, lParam);
+                break;
             }
         }
         break;
@@ -355,7 +377,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         break;
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        //return DefWindowProc(hWnd, message, wParam, lParam);
+        return DefFrameProc(hWnd, ClientWind, message, wParam, lParam);
     }
     return 0;
 }
@@ -370,7 +393,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 //  WM_DESTROY  - отправить сообщение о выходе и вернуться
 //
 //
-LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+//LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+//{
+//    RECT rect;
+//    switch (message)
+//    {
+//    case WM_COMMAND:
+//    {
+//        int wmId = LOWORD(wParam);
+//        // Разобрать выбор в меню:
+//        switch (wmId)
+//        {
+//        case IDM_ABOUT:
+//            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+//            break;
+//        case IDM_EXIT:
+//            DestroyWindow(hWnd);
+//            break;
+//        default:
+//            return DefWindowProc(hWnd, message, wParam, lParam);
+//        }
+//    }
+//    break;
+//    case WM_PAINT:
+//    {
+//        PAINTSTRUCT ps;
+//        HDC hdc = BeginPaint(hWnd, &ps);
+//       /* GetClientRect(hWnd, &rect);
+//        DrawTextW(hdc, buf, -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
+//        //UINT a = GetTextAlign(hdc);
+//        //TextOutA(hdc, 20,20, buf, wcslen(buf));
+//        // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
+//        EndPaint(hWnd, &ps);
+//    }
+//    break;
+//    case WM_DESTROY:
+//        PostQuitMessage(0);
+//        break;
+//    default:
+//        return DefWindowProc(hWnd, message, wParam, lParam);
+//    }
+//    return 0;
+//}
+
+LRESULT CALLBACK MDILEFTCHILD(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     RECT rect;
     switch (message)
