@@ -12,7 +12,7 @@ DWORD error;
 HINSTANCE hInst;                                // текущий экземпляр
 WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
 WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
-HWND leftText;                                  // Левое дочернее окно
+HWND LeftTextWindow;                                  // Левое дочернее окно
 WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
 WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
 
@@ -27,6 +27,9 @@ HDC hdcLF;
  wchar_t buf[100];
  HANDLE LeftFile_a;
  HANDLE LeftFile;
+
+ HFONT FONT;
+
  //PBYTE LRFILE;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -59,10 +62,10 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     return F.lpstrFile;
 }
 BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
-    std::stringstream ss;
+    //std::stringstream ss;
     DWORD OFFSET = 0, Block = 0, height = 0;
-    
-    hdcLF = GetDC(leftText);
+    char BufferString[100] = "";
+    hdcLF = GetDC(LeftTextWindow);
     while (FileSize > 0) { 
         Block = Granularity;
         if (Block > FileSize);
@@ -70,27 +73,37 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, FileSize);
       // if (LRFILE == NULL) {MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при создании проекции:", MB_OK); return FALSE; }
         DWORD i = 0;
+        
         while (i  < Block) {
-            ss << std::hex;
-            ss << i+OFFSET << " | ";
-            for (int j = 0; j < 8; j++) {
-                    ss << (int)LRFILE[i] << " ";
-                    i++;
-             }
-            ss << (int)LRFILE[i] << " " << (int)LRFILE[i+1] << " " << (int)LRFILE[i+2] << " " << (int)LRFILE[i+3] << " " << (int)LRFILE[i+4] << " " << (int)LRFILE[i+5] << " " << (int)LRFILE[i+6] << " " << (int)LRFILE[i+7] << " ";
+           /* ss << std::hex;
+            ss << i+OFFSET << " | ";*/
+           int BufferOffset = snprintf(BufferString, sizeof(BufferString), " %05X | ", i + OFFSET);
+            /*for (int j = 0; j < 8; j++) {*/
+                    //ss << (int)LRFILE[i] << " ";
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , " %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+                   
+            // }
+                    snprintf(BufferString + BufferOffset, sizeof(BufferString)-BufferOffset, "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+                       
+          /*  ss << (int)LRFILE[i] << " " << (int)LRFILE[i+1] << " " << (int)LRFILE[i+2] << " " << (int)LRFILE[i+3] << " " << (int)LRFILE[i+4] << " " << (int)LRFILE[i+5] << " " << (int)LRFILE[i+6] << " " << (int)LRFILE[i+7] << " ";
             ss << " | ";
             
                 for(DWORD j = i - 8; j < i; j++) {
                     ss << std::dec << LRFILE[j] << " ";
-            }
+            }*/
           /*  int j = i;
             i += 8;
             ss << std::dec << (int)LRFILE[j] << " " << (int)LRFILE[j + 1] << " " << (int)LRFILE[j + 2] << " " << (int)LRFILE[j + 3] << " " << (int)LRFILE[j + 4] << " " << (int)LRFILE[j + 5] << " " << (int)LRFILE[j + 6] << " " << (int)LRFILE[j + 7] << " " << std::endl;
-                SetWindowTextA(leftText, (LPCSTR)ss.str().c_str());
-                UpdateWindow(leftText);*/
-           TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
+                SetWindowTextA(LeftTextWindow, (LPCSTR)ss.str().c_str());
+                UpdateWindow(LeftTextWindow);*/
+           //TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
+           //SelectObject(hdcLF, FONT);
+           TextOutA(hdcLF, 5,  1+ height, (LPCSTR)BufferString, strlen(BufferString));
+           //snprintf(BufferString , sizeof(BufferString) , "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+         //  TextOutA(hdcLF, 5 + 300, height, (LPCSTR)BufferString, strlen(BufferString));
+           i+=8;
             height += 20;
-            ss.str("");
+           // ss.str("");
         }
        
         FileSize -= Block;
@@ -137,7 +150,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MyRegisterClass(hInstance);
   
     LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_LEFTTEXT, ltWindowClass, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_LeftTextWindow, ltWindowClass, MAX_LOADSTRING);
     LTRegisterClass(hInstance);
 
     // Выполнить инициализацию приложения:
@@ -205,7 +218,7 @@ ATOM LTRegisterClass(HINSTANCE hInstance)
     wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
     wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LEFTTEXT);
+    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LeftTextWindow);
     wcex1.lpszClassName = ltWindowClass;
     wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     /*if (!&wcex1) return false;
@@ -239,10 +252,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)1001, hInstance, nullptr);
    RECT rect;
     GetClientRect(hWnd, &rect);
-   leftText = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
+   LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
       0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
-  /*leftText =  CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_UPPERCASE, 0, 80, 1000, 800, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);*/
-  /*  leftText = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
+  /*LeftTextWindow =  CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_UPPERCASE, 0, 80, 1000, 800, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);*/
+  /*  LeftTextWindow = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
        WS_CHILD | WS_VISIBLE, 0, 80, 1000,
        800, hWnd, NULL, NULL, NULL);
     */
@@ -251,15 +264,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   if (!leftText)
+   if (!LeftTextWindow)
    {
        return FALSE;
    }
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
-   ShowWindow(leftText, nCmdShow);
-   UpdateWindow(leftText);
+   ShowWindow(LeftTextWindow, nCmdShow);
+   UpdateWindow(LeftTextWindow);
    return TRUE;
 }
 
@@ -281,7 +294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
-        MoveWindow(leftText, 0, 80, rc.right / 2, rc.bottom - 80, FALSE);
+        MoveWindow(LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
         break;
     }
     case WM_COMMAND:
@@ -302,15 +315,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Edit_SetText(textbox, fn);
                 break;
             case 1001: {
-                InvalidateRect(leftText, NULL, TRUE);
-                UpdateWindow(leftText);
+                InvalidateRect(LeftTextWindow, NULL, TRUE);
+                UpdateWindow(LeftTextWindow);
                 wchar_t fn1[1000];
                 Edit_GetText(textbox, fn1, 1000);
                 SYSTEM_INFO SYSINF;
                 GetSystemInfo(&SYSINF);
                 DWORD LFGranularity = SYSINF.dwAllocationGranularity;
                
-                hdcLF = GetDC(leftText);
+                hdcLF = GetDC(LeftTextWindow);
                 //MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
                 LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
                 if (LeftFile_a == NULL) { MessageBox(NULL, (wchar_t*)GetLastError() , L"Произошла ошибка при открытии файла:", MB_OK); break; }
@@ -321,6 +334,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
                 if (LeftFile == NULL) { MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при открытии файла:", MB_OK); break; }
+                //FONT = CreateFont(0, 0, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Terminal");
                 //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
               /*  DWORD OFFSET = 0;
                 while(LFSIZE > 0)*/
@@ -329,7 +343,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                    // height += 20;
 
                 //}
-                ReleaseDC(leftText, hdcLF);
+                ReleaseDC(LeftTextWindow, hdcLF);
                 CloseHandle(LeftFile); 
                 CloseHandle(LeftFile_a);
                

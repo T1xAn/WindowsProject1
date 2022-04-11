@@ -13,7 +13,7 @@
 #define IDI_SMALL				108
 #define IDC_WINDOWSPROJECT1			109
 #define IDS_LT_TITLE			121
-#define IDC_LEFTTEXT			120
+#define IDC_LeftTextWindow		120
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
