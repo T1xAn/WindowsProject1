@@ -73,7 +73,10 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, FileSize);
       // if (LRFILE == NULL) {MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при создании проекции:", MB_OK); return FALSE; }
         DWORD i = 0;
+          SIZE STRSIZE;
+          int io = SetMapMode(hdcLF, MM_TEXT);
         
+           LPSIZE Size = &STRSIZE;
         while (i  < Block) {
            /* ss << std::hex;
             ss << i+OFFSET << " | ";*/
@@ -83,7 +86,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
                 BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , " %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
                    
             // }
-                    snprintf(BufferString + BufferOffset, sizeof(BufferString)-BufferOffset, "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+                    //snprintf(BufferString + BufferOffset, sizeof(BufferString)-BufferOffset, "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
                        
           /*  ss << (int)LRFILE[i] << " " << (int)LRFILE[i+1] << " " << (int)LRFILE[i+2] << " " << (int)LRFILE[i+3] << " " << (int)LRFILE[i+4] << " " << (int)LRFILE[i+5] << " " << (int)LRFILE[i+6] << " " << (int)LRFILE[i+7] << " ";
             ss << " | ";
@@ -99,8 +102,10 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
            //TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
            //SelectObject(hdcLF, FONT);
            TextOutA(hdcLF, 5,  1+ height, (LPCSTR)BufferString, strlen(BufferString));
-           //snprintf(BufferString , sizeof(BufferString) , "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-         //  TextOutA(hdcLF, 5 + 300, height, (LPCSTR)BufferString, strlen(BufferString));
+         
+           GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, sizeof(BufferString), Size );
+           snprintf(BufferString , sizeof(BufferString) , "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+           TextOutA(hdcLF, 5 + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
             height += 20;
            // ss.str("");
@@ -245,7 +250,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
    search = CreateWindowA("button", ">>", WS_CHILD |
        WS_VISIBLE | WS_BORDER, 1050, 20, 30, 30, hWnd, (HMENU)1000, hInstance, nullptr);
-    textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
+    textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\XP\\Logs\\HexTest — копия.txt"),
        WS_CHILD | WS_VISIBLE, 30, 20, 1000,
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
@@ -334,7 +339,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
                 if (LeftFile == NULL) { MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при открытии файла:", MB_OK); break; }
-                //FONT = CreateFont(0, 0, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Terminal");
+               // FONT = CreateFont(0, 10, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Courier");
                 //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
               /*  DWORD OFFSET = 0;
                 while(LFSIZE > 0)*/
@@ -419,10 +424,6 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-       /* GetClientRect(hWnd, &rect);
-        DrawTextW(hdc, buf, -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
-        //UINT a = GetTextAlign(hdc);
-        //TextOutA(hdc, 20,20, buf, wcslen(buf));
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);
     }
