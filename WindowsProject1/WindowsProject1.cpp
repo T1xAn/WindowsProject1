@@ -38,6 +38,7 @@ ATOM            LTRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
 //
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
@@ -61,8 +62,10 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     //MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
     return F.lpstrFile;
 }
+
 BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
-    //std::stringstream ss;
+    //std::stringstream ss; 
+   
     DWORD OFFSET = 0, Block = 0, height = 0;
     char BufferString[100] = "";
     hdcLF = GetDC(LeftTextWindow);
@@ -71,44 +74,31 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
         if (Block > FileSize);
             Block = FileSize;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, FileSize);
+        //FONT = (HFONT)GetStockObject(SYSTEM_FONT);
+        //SelectObject(hdcLF, FONT);
       // if (LRFILE == NULL) {MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при создании проекции:", MB_OK); return FALSE; }
         DWORD i = 0;
+        int FirstOffset = 0;
           SIZE STRSIZE;
-          int io = SetMapMode(hdcLF, MM_TEXT);
-        
-           LPSIZE Size = &STRSIZE;
+          LPSIZE Size = &STRSIZE;
+          int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", OFFSET + Block);
+          for(int i = 0; i < StrNumOffset; i++) snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
+          snprintf(BufferString + StrNumOffset, sizeof(BufferString) - i-1, " ");
+          GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, strlen(BufferString), Size);
+          FirstOffset = Size->cx;
+          STRSIZE = FindMaxTextOffset(FONT, hdcLF);  
+           
         while (i  < Block) {
-           /* ss << std::hex;
-            ss << i+OFFSET << " | ";*/
-           int BufferOffset = snprintf(BufferString, sizeof(BufferString), " %05X | ", i + OFFSET);
-            /*for (int j = 0; j < 8; j++) {*/
-                    //ss << (int)LRFILE[i] << " ";
-                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , " %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-                   
-            // }
-                    //snprintf(BufferString + BufferOffset, sizeof(BufferString)-BufferOffset, "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-                       
-          /*  ss << (int)LRFILE[i] << " " << (int)LRFILE[i+1] << " " << (int)LRFILE[i+2] << " " << (int)LRFILE[i+3] << " " << (int)LRFILE[i+4] << " " << (int)LRFILE[i+5] << " " << (int)LRFILE[i+6] << " " << (int)LRFILE[i+7] << " ";
-            ss << " | ";
-            
-                for(DWORD j = i - 8; j < i; j++) {
-                    ss << std::dec << LRFILE[j] << " ";
-            }*/
-          /*  int j = i;
-            i += 8;
-            ss << std::dec << (int)LRFILE[j] << " " << (int)LRFILE[j + 1] << " " << (int)LRFILE[j + 2] << " " << (int)LRFILE[j + 3] << " " << (int)LRFILE[j + 4] << " " << (int)LRFILE[j + 5] << " " << (int)LRFILE[j + 6] << " " << (int)LRFILE[j + 7] << " " << std::endl;
-                SetWindowTextA(LeftTextWindow, (LPCSTR)ss.str().c_str());
-                UpdateWindow(LeftTextWindow);*/
-           //TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.str().c_str(), strlen(ss.str().c_str()));
-           //SelectObject(hdcLF, FONT);
-           TextOutA(hdcLF, 5,  1+ height, (LPCSTR)BufferString, strlen(BufferString));
-         
-           GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, sizeof(BufferString), Size );
-           snprintf(BufferString , sizeof(BufferString) , "     | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-           TextOutA(hdcLF, 5 + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
+           int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ":  %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+
+           
+           TextOutA(hdcLF, 5, height, (LPCSTR)BufferString, strlen(BufferString));
+           snprintf(BufferString , sizeof(BufferString) , "| %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
+               LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+           TextOutA(hdcLF, 5 + FirstOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
-            height += 20;
-           // ss.str("");
+           height += STRSIZE.cy;
         }
        
         FileSize -= Block;
@@ -118,26 +108,28 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
     MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
     return true;
 }
-//std::string GetEightBitsHex(HANDLE LeftFile, DWORD Granularity , DWORD ViewStart) {
-//    std::stringstream ss;
-//   // DWORD Block = Granularity;
-//    // if (Block > FileSize);
-//    // Block = FileSize;
-//    DWORD OFFSET = (ViewStart / Granularity) * Granularity;
-//    // if (OFFSET == 0) OFFSET = ViewStart;
-//    PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0,  OFFSET, Granularity);
-//    //int OFFSET2 = (ViewStart - (ViewStart / Granularity) * Granularity);
-//    // char* Data = (char*) LRFILE + OFFSET2;
-//    DWORD error = GetLastError();
-//    ss << std::hex;
-//    //ss << ViewStart << ": ";
-//    for (int i=0; i < 8; i++)
-//        ss << (int)LRFILE[i] << " ";
-//    UnmapViewOfFile(LRFILE);
-//    /*OFFSET += Block;
-//    FileSize -= Block;*/
-//    return ss.str();
-//}
+
+SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
+    if (!FONT) {
+        FONT = (HFONT)GetStockObject(SYSTEM_FONT);
+        SelectObject(hdc, FONT);
+    }
+    char buf[60];
+    int max = 0, maxSymbol;
+    SIZE STRSIZE;
+    LPSIZE Size = &STRSIZE;
+
+    for (int Symbol = 0x41; Symbol < 0x47; Symbol++) {
+        snprintf(buf, sizeof(buf), "%C", Symbol);
+        GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
+        if (Size->cx > max) { max = Size->cx; maxSymbol = Symbol; }
+    }
+    snprintf(buf, sizeof(buf),": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
+        maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol);
+    GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
+    return STRSIZE;
+}
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -308,17 +300,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             
             int wmId = LOWORD(wParam);
             // Разобрать выбор в меню:
-            LPWSTR fn; 
+           // LPCSTR fn; 
            // DWORD LFSIZE; 
             //File_offset_inf LFOFFSET;
             //int height = 0;
-            std::string ss;
             switch (wmId)
             {
-            case 1000:
-                fn = buttonGetFile(File);
-                Edit_SetText(textbox, fn);
+            case 1000: {
+
+                wchar_t* fn;
+                   fn = buttonGetFile(File);
+                Edit_SetText(textbox, (LPWSTR)fn);
+                error = GetLastError();
                 break;
+            }
             case 1001: {
                 InvalidateRect(LeftTextWindow, NULL, TRUE);
                 UpdateWindow(LeftTextWindow);
@@ -339,7 +334,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
                 if (LeftFile == NULL) { MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при открытии файла:", MB_OK); break; }
-               // FONT = CreateFont(0, 10, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Courier");
+                //FONT = CreateFont(0, 10, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Courier");
                 //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
               /*  DWORD OFFSET = 0;
                 while(LFSIZE > 0)*/
@@ -370,11 +365,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
        
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            /////////////
-            RECT rect;
-            /*GetClientRect(hWnd, &rect);
-            DrawTextW(hdc,L"Вывело", -1, &rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);*/
-            //TextOutA(hdc, 200, 200,L"rery", 4);
+           
+     
             // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
             EndPaint(hWnd, &ps);
         }
