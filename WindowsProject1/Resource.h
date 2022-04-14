@@ -14,6 +14,8 @@
 #define IDC_WINDOWSPROJECT1			109
 #define IDS_LT_TITLE			121
 #define IDC_LeftTextWindow		120
+#define IDB_SearchButton_Left  1000
+#define IDB_ReadButton			1001
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

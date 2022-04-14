@@ -23,11 +23,11 @@ static HWND ReadButton;
 
 ////
 HDC hdcLF;
- OPENFILENAME File;
+// OPENFILENAMEW File;
  wchar_t buf[100];
  HANDLE LeftFile_a;
  HANDLE LeftFile;
-
+ wchar_t szFile[1000];
  HFONT FONT;
 
  //PBYTE LRFILE;
@@ -43,9 +43,9 @@ SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
 //  return Возвращает рассположение файла на компьютере
-LPWSTR buttonGetFile(OPENFILENAME F) {
-    wchar_t szFile[1000];
-    ZeroMemory(&File, sizeof(File));
+OPENFILENAMEW buttonGetFile(){
+    OPENFILENAMEW F;
+    ZeroMemory(&F, sizeof(F));
     F.lStructSize = sizeof(OPENFILENAME);
     F.hwndOwner = NULL;
     F.lpstrFile = szFile;
@@ -59,66 +59,59 @@ LPWSTR buttonGetFile(OPENFILENAME F) {
     F.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     GetOpenFileName(&F);
-    //MessageBox(NULL, F.lpstrFile, L"File Name", MB_OK);
-    return F.lpstrFile;
+    return F;
 }
 
-BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize) {
-    //std::stringstream ss; 
-   
-    DWORD OFFSET = 0, Block = 0, height = 0;
+BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD OFFSET) {
+    RECT rt;
+    SIZE STRSIZE;
+    GetClientRect(LeftTextWindow, &rt);
+    DWORD Block = Granularity, height = 0;
     char BufferString[100] = "";
+    DWORD i = OFFSET;
+    int SecondOffset = 0;
+    OFFSET = (OFFSET/Granularity);
+    OFFSET *= Granularity;
     hdcLF = GetDC(LeftTextWindow);
-    while (FileSize > 0) { 
-        Block = Granularity;
-        if (Block > FileSize);
-            Block = FileSize;
-        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, FileSize);
-        //FONT = (HFONT)GetStockObject(SYSTEM_FONT);
-        //SelectObject(hdcLF, FONT);
-      // if (LRFILE == NULL) {MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при создании проекции:", MB_OK); return FALSE; }
-        DWORD i = 0;
-        int FirstOffset = 0;
-          SIZE STRSIZE;
-          LPSIZE Size = &STRSIZE;
-          int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", OFFSET + Block);
-          for(int i = 0; i < StrNumOffset; i++) snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
-          snprintf(BufferString + StrNumOffset, sizeof(BufferString) - i-1, " ");
-          GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, strlen(BufferString), Size);
-          FirstOffset = Size->cx;
-          STRSIZE = FindMaxTextOffset(FONT, hdcLF);  
-           
-        while (i  < Block) {
-           int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
-                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ":  %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
 
-           
+        STRSIZE = FindMaxTextOffset(FONT, hdcLF);
+        SecondOffset = STRSIZE.cx;
+   
+        if (Block > FileSize) Block = FileSize;
+        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
+        if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8+0.5);
+
+          int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", OFFSET + Block*8);
+          for(int i = 0; i < StrNumOffset; i++) height = snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
+          snprintf(BufferString + StrNumOffset, sizeof(BufferString) - height-1, " ");
+          GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, strlen(BufferString), &STRSIZE);
+          
+          for(int count = 0 ; count < Block; count++)
+             {
+           int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ":  %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], 
+                    LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
+
            TextOutA(hdcLF, 5, height, (LPCSTR)BufferString, strlen(BufferString));
            snprintf(BufferString , sizeof(BufferString) , "| %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
                LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-           TextOutA(hdcLF, 5 + FirstOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
+           TextOutA(hdcLF, 5 + SecondOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
            height += STRSIZE.cy;
-        }
-       
-        FileSize -= Block;
-        OFFSET += Block;
+            }
         UnmapViewOfFile(LRFILE);
-    }
     MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
     return true;
 }
 
 SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
-    if (!FONT) {
+    if (!FONT) 
         FONT = (HFONT)GetStockObject(SYSTEM_FONT);
-        SelectObject(hdc, FONT);
-    }
+    SelectObject(hdc, FONT);
     char buf[60];
     int max = 0, maxSymbol;
     SIZE STRSIZE;
     LPSIZE Size = &STRSIZE;
-
     for (int Symbol = 0x41; Symbol < 0x47; Symbol++) {
         snprintf(buf, sizeof(buf), "%C", Symbol);
         GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
@@ -241,12 +234,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE|  WS_CLIPCHILDREN,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
    search = CreateWindowA("button", ">>", WS_CHILD |
-       WS_VISIBLE | WS_BORDER, 1050, 20, 30, 30, hWnd, (HMENU)1000, hInstance, nullptr);
+       WS_VISIBLE | WS_BORDER, 1050, 20, 30, 30, hWnd, (HMENU)IDB_SearchButton_Left, hInstance, nullptr);
     textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\XP\\Logs\\HexTest — копия.txt"),
        WS_CHILD | WS_VISIBLE, 30, 20, 1000,
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
-        WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)1001, hInstance, nullptr);
+        WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);
    RECT rect;
     GetClientRect(hWnd, &rect);
    LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
@@ -306,15 +299,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //int height = 0;
             switch (wmId)
             {
-            case 1000: {
-
-                wchar_t* fn;
-                   fn = buttonGetFile(File);
-                Edit_SetText(textbox, (LPWSTR)fn);
-                error = GetLastError();
+            case IDB_SearchButton_Left: {
+                OPENFILENAMEW File;
+                   File = buttonGetFile();
+                Edit_SetText(textbox, File.lpstrFile);
                 break;
             }
-            case 1001: {
+            case IDB_ReadButton: {
                 InvalidateRect(LeftTextWindow, NULL, TRUE);
                 UpdateWindow(LeftTextWindow);
                 wchar_t fn1[1000];
@@ -338,11 +329,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
               /*  DWORD OFFSET = 0;
                 while(LFSIZE > 0)*/
-                   GetEightBitsHex(LeftFile, LFGranularity, LFSIZE);
-                   // TextOutA(hdcLF, 20, 20 + height, (LPCSTR)ss.c_str(), strlen(ss.c_str()));
-                   // height += 20;
+                   GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, 0);
 
-                //}
                 ReleaseDC(LeftTextWindow, hdcLF);
                 CloseHandle(LeftFile); 
                 CloseHandle(LeftFile_a);
