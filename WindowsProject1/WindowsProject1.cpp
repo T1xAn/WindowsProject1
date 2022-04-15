@@ -29,7 +29,9 @@ HDC hdcLF;
  HANDLE LeftFile;
  wchar_t szFile[1000];
  HFONT FONT;
-
+ int ScrollButtonPos = 0;
+ _int64 LFSIZE;
+ DWORD LFGranularity;
  //PBYTE LRFILE;
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -100,7 +102,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD 
            height += STRSIZE.cy;
             }
         UnmapViewOfFile(LRFILE);
-    MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
+    //MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
     return true;
 }
 
@@ -249,6 +251,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        WS_CHILD | WS_VISIBLE, 0, 80, 1000,
        800, hWnd, NULL, NULL, NULL);
     */
+   int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
    if (!hWnd)
    {
       return FALSE;
@@ -312,13 +315,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Edit_GetText(textbox, fn1, 1000);
                 SYSTEM_INFO SYSINF;
                 GetSystemInfo(&SYSINF);
-                DWORD LFGranularity = SYSINF.dwAllocationGranularity;
-               
+               /* DWORD*/ LFGranularity = SYSINF.dwAllocationGranularity;
+                if(LeftFile!= NULL) CloseHandle(LeftFile); 
                 hdcLF = GetDC(LeftTextWindow);
                 //MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
                 LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
                 if (LeftFile_a == NULL) { MessageBox(NULL, (wchar_t*)GetLastError() , L"Произошла ошибка при открытии файла:", MB_OK); break; }
-                _int64 LFSIZE = GetFileSize(LeftFile_a, NULL);
+                /*_int64*/ LFSIZE = GetFileSize(LeftFile_a, NULL);
  /*               DWORD FileMapStart = (LFSIZE / LFGranularity)*LFGranularity;
                 DWORD LFViewSize = (LFSIZE%LFGranularity)+8;
                 DWORD LFMapSize = LFSIZE + 8;
@@ -332,7 +335,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                    GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, 0);
 
                 ReleaseDC(LeftTextWindow, hdcLF);
-                CloseHandle(LeftFile); 
+                
                 CloseHandle(LeftFile_a);
                
                 break;
@@ -341,6 +344,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
+                if (LeftFile != NULL) CloseHandle(LeftFile);
                 DestroyWindow(hWnd);
                 break;
             default:
@@ -383,6 +387,40 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     RECT rect;
     switch (message)
     {
+    case WM_CREATE:
+    {
+        hdcLF = GetDC(LeftTextWindow);
+        SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
+        SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
+        ReleaseDC(LeftTextWindow,hdcLF);
+    }
+    case WM_VSCROLL: {
+        switch (LOWORD(wParam)) {
+        case SB_LINEUP:
+            ScrollButtonPos -= 1;
+            break;
+        case SB_LINEDOWN:
+            ScrollButtonPos += 1;
+            break;
+        /*case SB_THUMBPOSITION:
+            ScrollButtonPos = HIWORD(wParam);
+            break;*/
+        case SB_THUMBTRACK:
+            ScrollButtonPos = HIWORD(wParam);
+            break;
+        default:
+            break;
+        }
+
+        if (ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) && LeftFile!= NULL)
+        {
+            SetScrollPos(LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
+            InvalidateRect(LeftTextWindow, NULL, TRUE);
+            UpdateWindow(LeftTextWindow);
+            GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, ScrollButtonPos * 8);
+        }
+        break;
+    }
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
