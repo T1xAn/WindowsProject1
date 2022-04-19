@@ -20,7 +20,7 @@ static HWND search;
 static HWND textbox;
 static HWND ReadButton;
 
-
+DWORD Scrolloffset = 0;
 ////
 HDC hdcLF;
 // OPENFILENAMEW File;
@@ -30,7 +30,7 @@ HDC hdcLF;
  wchar_t szFile[1000];
  HFONT FONT;
  int ScrollButtonPos = 0;
- _int64 LFSIZE;
+ DWORD LFSIZE;
  DWORD LFGranularity;
  int Strings_On_Screen;
  //PBYTE LRFILE;
@@ -65,7 +65,7 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD OFFSET) {
+int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OFFSET) {
     RECT rt;
    
     SIZE STRSIZE;
@@ -86,7 +86,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD O
         if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
         if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8+0.5);
-
+         
           int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
           for(int i = 0; i < StrNumOffset; i++) height = snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
           snprintf(BufferString + StrNumOffset, sizeof(BufferString) - height-1, " ");
@@ -94,6 +94,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD O
           i -= OFFSET;
           for(int count = 0 ; count < Block; count++)
              {
+              
            int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
                 BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ":  %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], 
                     LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
@@ -103,7 +104,16 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, _int64 FileSize, DWORD O
                LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
            TextOutA(hdcLF, 5 + SecondOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
-           if (i > Granularity) continue;
+           if (i == Granularity) {
+               UnmapViewOfFile(LRFILE);
+               int temp = Block;
+               Block = Granularity;
+               OFFSET = (((OFFSET / Granularity) + 1) * Granularity);
+               if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
+               PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block); 
+               i = 0;
+               Block = temp;
+           }
            height += STRSIZE.cy;
             }
         UnmapViewOfFile(LRFILE);
@@ -411,33 +421,36 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ReleaseDC(LeftTextWindow,hdcLF);*/
     }
     case WM_VSCROLL: {
-            _int64 Scrolloffset = 0;
+           
         switch (LOWORD(wParam)) {
             
         case SB_LINEUP:
-            ScrollButtonPos -= 1;
+            Scrolloffset -= 1;
             break;
         case SB_LINEDOWN:
-            ScrollButtonPos += 1;
+            Scrolloffset += 1;
             break;
-        case SB_THUMBPOSITION:
+       /* case SB_THUMBPOSITION:
             ScrollButtonPos = HIWORD(wParam);
             Scrolloffset = ((LFSIZE) / 8 - Strings_On_Screen + 1) * ((float)ScrollButtonPos / 100);
-            break;
+            break;*/
         case SB_THUMBTRACK:
             ScrollButtonPos = HIWORD(wParam);
             Scrolloffset = ((LFSIZE) / 8-Strings_On_Screen+1) * ((float)ScrollButtonPos / 100);
             break;
         default:
-            break;
+            return 0 ;
         }
 
         if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL)
         {
+
+            //ScrollButtonPos = (Scrolloffset* 100)/((LFSIZE) / 8 - Strings_On_Screen + 1) ;
             int temp = ScrollButtonPos;
-            temp = min(100, ScrollButtonPos);
-            ScrollButtonPos = max(0, ScrollButtonPos);
-            SetScrollPos(LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
+            //temp = min(100, ScrollButtonPos);
+            Scrolloffset = max(0, Scrolloffset);
+            Scrolloffset = min((LFSIZE/ 8) - Strings_On_Screen + 1, Scrolloffset);
+            SetScrollPos(LeftTextWindow, SB_VERT, temp, TRUE);
             InvalidateRect(LeftTextWindow, NULL, TRUE);
             UpdateWindow(LeftTextWindow);
             if (Scrolloffset != 0)  ScrollButtonPos = (int)Scrolloffset;
