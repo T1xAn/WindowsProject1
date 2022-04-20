@@ -85,7 +85,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
    
         if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
-        if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8+0.5);
+        if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8.0);
          
           int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
           for(int i = 0; i < StrNumOffset; i++) height = snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
@@ -116,6 +116,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
            }
            height += STRSIZE.cy;
             }
+          ReleaseDC(LeftTextWindow, hdcLF);
         UnmapViewOfFile(LRFILE);
     //MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
         
@@ -124,8 +125,9 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
 }
 
 SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
-    if (!FONT) 
+    if (FONT == NULL) 
         FONT = (HFONT)GetStockObject(SYSTEM_FONT);
+   // error = GetLastError();
     SelectObject(hdc, FONT);
     char buf[60];
     int max = 0, maxSymbol;
@@ -305,6 +307,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         RECT rc;
         GetClientRect(hWnd, &rc);
         MoveWindow(LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
+       /* SIZE STRSIZE = FindMaxTextOffset(FONT, hdcLF);
+        Strings_On_Screen = (rc.bottom / STRSIZE.cy);*/
         break;
     }
     case WM_COMMAND:
@@ -333,11 +337,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SYSTEM_INFO SYSINF;
                 GetSystemInfo(&SYSINF);
                /* DWORD*/ LFGranularity = SYSINF.dwAllocationGranularity;
-                if(LeftFile!= NULL) CloseHandle(LeftFile); 
+                if(LeftFile_a!= NULL) CloseHandle(LeftFile); 
                 hdcLF = GetDC(LeftTextWindow);
                 //MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
                 LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-                if (LeftFile_a == NULL) { MessageBox(NULL, (wchar_t*)GetLastError() , L"Произошла ошибка при открытии файла:", MB_OK); break; }
+                if (LeftFile_a == (HANDLE)0xffffffff) {
+                    MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
+                        L"Произошла ошибка при открытии файла:", MB_OK);
+                    //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
+                    break;
+                }
                 /*_int64*/ LFSIZE = GetFileSize(LeftFile_a, NULL);
                 
                 SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
@@ -350,7 +359,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 DWORD LFMapSize = LFSIZE + 8;
                 DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-                if (LeftFile == NULL) { MessageBox(NULL, (wchar_t*)GetLastError(), L"Произошла ошибка при открытии файла:", MB_OK); break; }
+                if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
                 //FONT = CreateFont(0, 10, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Courier");
                 //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
               /*  DWORD OFFSET = 0;
@@ -421,7 +430,6 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ReleaseDC(LeftTextWindow,hdcLF);*/
     }
     case WM_VSCROLL: {
-           
         switch (LOWORD(wParam)) {
             
         case SB_LINEUP:
@@ -436,25 +444,26 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;*/
         case SB_THUMBTRACK:
             ScrollButtonPos = HIWORD(wParam);
-            Scrolloffset = ((LFSIZE) / 8-Strings_On_Screen+1) * ((float)ScrollButtonPos / 100);
+            Scrolloffset = ceil(ceil(LFSIZE / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 100);
             break;
         default:
             return 0 ;
         }
 
-        if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL)
+        if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL )
         {
-
-            //ScrollButtonPos = (Scrolloffset* 100)/((LFSIZE) / 8 - Strings_On_Screen + 1) ;
+            
+            //ScrollButtonPos = ((Scrolloffset* 100)/(ceil((LFSIZE) / 8.0) - Strings_On_Screen));
             int temp = ScrollButtonPos;
-            //temp = min(100, ScrollButtonPos);
+            temp = min(100, ScrollButtonPos);
+          
+            Scrolloffset = min(ceil(LFSIZE/ 8.0) - Strings_On_Screen , Scrolloffset);
             Scrolloffset = max(0, Scrolloffset);
-            Scrolloffset = min((LFSIZE/ 8) - Strings_On_Screen + 1, Scrolloffset);
             SetScrollPos(LeftTextWindow, SB_VERT, temp, TRUE);
             InvalidateRect(LeftTextWindow, NULL, TRUE);
             UpdateWindow(LeftTextWindow);
-            if (Scrolloffset != 0)  ScrollButtonPos = (int)Scrolloffset;
-            GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, ScrollButtonPos * 8);
+            if (Scrolloffset != 0)  ScrollButtonPos = (DWORD)Scrolloffset;
+            Strings_On_Screen = GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, Scrolloffset * 8);
             ScrollButtonPos = temp;
             
         }
