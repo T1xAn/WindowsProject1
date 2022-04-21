@@ -86,7 +86,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
         if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
         if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8.0);
-         
+       // if (Block / 8 < Strings_On_Screen) Block = ceil(Block / 8.0); else Block = Strings_On_Screen;
           int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
           for(int i = 0; i < StrNumOffset; i++) height = snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
           snprintf(BufferString + StrNumOffset, sizeof(BufferString) - height-1, " ");
@@ -127,8 +127,9 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
 SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
     if (FONT == NULL) 
         FONT = (HFONT)GetStockObject(SYSTEM_FONT);
-   // error = GetLastError();
+    
     SelectObject(hdc, FONT);
+    error = GetLastError();
     char buf[60];
     int max = 0, maxSymbol;
     SIZE STRSIZE;
@@ -347,6 +348,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
                     break;
                 }
+                //LARGE_INTEGER LFSIZE;
                 /*_int64*/ LFSIZE = GetFileSize(LeftFile_a, NULL);
                 
                 SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
@@ -419,6 +421,19 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     RECT rect;
     switch (message)
     {
+    case WM_SIZE: {
+        if (LeftTextWindow != NULL) {
+            //RECT rc;
+            //TEXTMETRIC TextMetric ;
+            //GetClientRect(LeftTextWindow, &rc);
+            //HDC hdc = GetDC(LeftTextWindow);
+            //GetTextMetrics(hdc, &TextMetric);
+            //ReleaseDC(LeftTextWindow,hdc);
+            ////SIZE STRSIZE = FindMaxTextOffset(FONT, hdcLF);
+            //Strings_On_Screen = (rc.bottom / TextMetric.tmHeight);
+        }
+        break;
+    }
     case WM_CREATE:
     {
         /*int i=0, j=0;
