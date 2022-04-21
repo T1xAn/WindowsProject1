@@ -1,5 +1,5 @@
 #pragma once
-
+#include "framework.h"
 class ScrollFileInfo{
 private:
 	DWORD Granularity;
@@ -13,7 +13,7 @@ public:
 
 	ScrollFileInfo() {
 		Scrolloffset = 0;
-		Granularity = -1;
+		Granularity = 0;
 		LeftFileSize;
 		RightFileSize;
 	}
@@ -21,18 +21,18 @@ public:
 		SYSTEM_INFO SYSINF;
 		GetSystemInfo(&SYSINF);
 		Granularity = SYSINF.dwAllocationGranularity;
-		if (Granularity == -1) return false;
+		if (Granularity == 0) return false;
 		return true;
 	}
 	BOOL GetLeftFileSize(HANDLE LeftFile) {
-		LeftFileSize.QuadPart = -1;
+		LeftFileSize.QuadPart = 0;
 		GetFileSizeEx(LeftFile, &LeftFileSize);
-		if (LeftFileSize.QuadPart = -1) return false;
+		if (LeftFileSize.QuadPart == 0) return false;
 		return true;
 	}
 	BOOL GetTextMetric(HWND Window) {
 		HDC hdc = GetDC(Window);
-		if (GetLastError != 0) return false;
+		//if (GetLastError() != 0) return false;
 		GetTextMetrics(hdc, &TextMetric);
 		ReleaseDC(Window, hdc);
 		return true;
@@ -40,7 +40,7 @@ public:
 	BOOL GetNumStringsOnScreen(HWND Window) {
 		RECT rt;
 		GetClientRect(Window, &rt);
-		if (GetLastError() != 0) return false;
+		if  (TextMetric.tmHeight == 0) return false;
 		Strings_on_screen = (rt.bottom / TextMetric.tmHeight);
 		return true;
 	}
@@ -56,5 +56,5 @@ public:
 	LARGE_INTEGER ReturnLeftFileSize() {
 		return LeftFileSize;
 	}
-	~ScrollFileInfo();
+	~ScrollFileInfo() {};
 };

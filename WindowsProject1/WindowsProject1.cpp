@@ -20,20 +20,13 @@ static HWND search;
 static HWND textbox;
 static HWND ReadButton;
 
-DWORD Scrolloffset = 0;
-////
-HDC hdcLF;
-// OPENFILENAMEW File;
- wchar_t buf[100];
- HANDLE LeftFile_a;
+ 
  HANDLE LeftFile;
  wchar_t szFile[1000];
  HFONT FONT;
  int ScrollButtonPos = 0;
- DWORD LFSIZE;
- DWORD LFGranularity;
- int Strings_On_Screen;
- //PBYTE LRFILE;
+ ScrollFileInfo ScrolledFilesInfo;
+
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -54,7 +47,7 @@ OPENFILENAMEW buttonGetFile(){
     F.lpstrFile = szFile;
     F.lpstrFile[0] = '\0';
     F.nMaxFile = sizeof(szFile);
-    F.lpstrFilter = L"All Files\0*.*\0\0"; //"All\0*.*\0Text\0*.TXT\0";
+    F.lpstrFilter = L"All Files\0*.*\0\0"; 
     F.nFilterIndex = 1;
     F.lpstrFileTitle = NULL;
     F.nMaxFileTitle = 0;
@@ -65,7 +58,7 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OFFSET) {
+BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OFFSET) {
     RECT rt;
    
     SIZE STRSIZE;
@@ -78,7 +71,7 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
 
     OFFSET *= Granularity;
     
-    hdcLF = GetDC(LeftTextWindow);
+   HDC hdcLF = GetDC(LeftTextWindow);
 
         STRSIZE = FindMaxTextOffset(FONT, hdcLF);
         SecondOffset = STRSIZE.cx;
@@ -118,10 +111,8 @@ int GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OF
             }
           ReleaseDC(LeftTextWindow, hdcLF);
         UnmapViewOfFile(LRFILE);
-    //MessageBox(NULL, nullptr, L"Проекция завершена", MB_OK);
-        
-       
-    return Block;
+             
+    return true;
 }
 
 SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
@@ -170,6 +161,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         return FALSE;
     }
+    
+    ScrolledFilesInfo.GetSystemGranularity();
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
 
@@ -233,9 +226,7 @@ ATOM LTRegisterClass(HINSTANCE hInstance)
     wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LeftTextWindow);
     wcex1.lpszClassName = ltWindowClass;
     wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-    /*if (!&wcex1) return false;
-
-    DWORD  error = GetLastError();*/
+ 
     return RegisterClassExW(&wcex1);
 }
 
@@ -262,15 +253,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
         WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);
-   RECT rect;
-    GetClientRect(hWnd, &rect);
-   LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle,WS_CHILD | WS_VSCROLL| WS_BORDER | WS_CLIPSIBLINGS, 
-      0, 80, rect.right/2, rect.bottom -80, hWnd, nullptr, hInstance, nullptr);
-  /*LeftTextWindow =  CreateWindowA("EDIT", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_UPPERCASE, 0, 80, 1000, 800, hWnd, (HMENU)1004, (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), NULL);*/
-  /*  LeftTextWindow = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("//"),
-       WS_CHILD | WS_VISIBLE, 0, 80, 1000,
-       800, hWnd, NULL, NULL, NULL);
-    */
+  
    int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
    if (!hWnd)
    {
@@ -303,25 +286,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE: {
+        RECT rect;
+        GetClientRect(hWnd, &rect);
+        LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle, WS_CHILD | WS_VSCROLL | WS_BORDER | WS_CLIPSIBLINGS,
+            0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, hInst, nullptr);
+        ScrolledFilesInfo.GetTextMetric(LeftTextWindow);
+        SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
+        SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
+    }
     case WM_SIZE:
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
         MoveWindow(LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
-       /* SIZE STRSIZE = FindMaxTextOffset(FONT, hdcLF);
-        Strings_On_Screen = (rc.bottom / STRSIZE.cy);*/
         break;
     }
     case WM_COMMAND:
         {
-            //size_t result;
             
             int wmId = LOWORD(wParam);
             // Разобрать выбор в меню:
-           // LPCSTR fn; 
-           // DWORD LFSIZE; 
-            //File_offset_inf LFOFFSET;
-            //int height = 0;
             switch (wmId)
             {
             case IDB_SearchButton_Left: {
@@ -335,38 +320,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 UpdateWindow(LeftTextWindow);
                 wchar_t fn1[1000];
                 Edit_GetText(textbox, fn1, 1000);
-                SYSTEM_INFO SYSINF;
-                GetSystemInfo(&SYSINF);
-               /* DWORD*/ LFGranularity = SYSINF.dwAllocationGranularity;
-                if(LeftFile_a!= NULL) CloseHandle(LeftFile); 
-                hdcLF = GetDC(LeftTextWindow);
-                //MessageBox(NULL, fn1, L"File Name in TextBox:", MB_OK);
-                LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+               
+                if(LeftFile!= NULL) CloseHandle(LeftFile); 
+                HDC hdcLF = GetDC(LeftTextWindow);
+
+                HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
                 if (LeftFile_a == (HANDLE)0xffffffff) {
                     MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
                         L"Произошла ошибка при открытии файла:", MB_OK);
                     //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
                     break;
                 }
-                //LARGE_INTEGER LFSIZE;
-                /*_int64*/ LFSIZE = GetFileSize(LeftFile_a, NULL);
-                
-                SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
-                SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
+                ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
+                LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
 
-          /*      GetScrollRange(LeftTextWindow, SB_VERT, (LPINT)i, (LPINT)j);
-                error = GetLastError();*/
- /*               DWORD FileMapStart = (LFSIZE / LFGranularity)*LFGranularity;
-                DWORD LFViewSize = (LFSIZE%LFGranularity)+8;
-                DWORD LFMapSize = LFSIZE + 8;
-                DWORD LFViewDataS = LFSIZE - FileMapStart;*/
                 LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
                 if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
-                //FONT = CreateFont(0, 10, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, L"Courier");
-                //for (DWORD i = 0; i < LFSIZE; i += LFGranularity) {
-              /*  DWORD OFFSET = 0;
-                while(LFSIZE > 0)*/
-                   Strings_On_Screen = GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, 0);
+                
+                GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0);
 
                 ReleaseDC(LeftTextWindow, hdcLF);
                 
@@ -392,7 +363,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
            
-     
             // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
             EndPaint(hWnd, &ps);
         }
@@ -422,36 +392,19 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_SIZE: {
-        if (LeftTextWindow != NULL) {
-            //RECT rc;
-            //TEXTMETRIC TextMetric ;
-            //GetClientRect(LeftTextWindow, &rc);
-            //HDC hdc = GetDC(LeftTextWindow);
-            //GetTextMetrics(hdc, &TextMetric);
-            //ReleaseDC(LeftTextWindow,hdc);
-            ////SIZE STRSIZE = FindMaxTextOffset(FONT, hdcLF);
-            //Strings_On_Screen = (rc.bottom / TextMetric.tmHeight);
-        }
+            ScrolledFilesInfo.GetNumStringsOnScreen(LeftTextWindow);
         break;
     }
-    case WM_CREATE:
-    {
-        /*int i=0, j=0;
-        hdcLF = GetDC(LeftTextWindow);
-        SetScrollRange(LeftTextWindow, SB_VERT, 0, 2, FALSE);
-        SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
-        GetScrollRange(LeftTextWindow, SB_VERT, (LPINT)i, (LPINT)j);
-        error  = GetLastError();
-        ReleaseDC(LeftTextWindow,hdcLF);*/
-    }
     case WM_VSCROLL: {
+        LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+        int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
         switch (LOWORD(wParam)) {
             
         case SB_LINEUP:
-            Scrolloffset -= 1;
+            ScrolledFilesInfo.Scrolloffset -= 1;
             break;
         case SB_LINEDOWN:
-            Scrolloffset += 1;
+           ScrolledFilesInfo.Scrolloffset+= 1;
             break;
        /* case SB_THUMBPOSITION:
             ScrollButtonPos = HIWORD(wParam);
@@ -459,7 +412,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;*/
         case SB_THUMBTRACK:
             ScrollButtonPos = HIWORD(wParam);
-            Scrolloffset = ceil(ceil(LFSIZE / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 100);
+            ScrolledFilesInfo.Scrolloffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 100);
             break;
         default:
             return 0 ;
@@ -471,14 +424,13 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //ScrollButtonPos = ((Scrolloffset* 100)/(ceil((LFSIZE) / 8.0) - Strings_On_Screen));
             int temp = ScrollButtonPos;
             temp = min(100, ScrollButtonPos);
-          
-            Scrolloffset = min(ceil(LFSIZE/ 8.0) - Strings_On_Screen , Scrolloffset);
-            Scrolloffset = max(0, Scrolloffset);
+           ScrolledFilesInfo.Scrolloffset = min(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen, ScrolledFilesInfo.Scrolloffset);
+           ScrolledFilesInfo.Scrolloffset = max(0, ScrolledFilesInfo.Scrolloffset);
             SetScrollPos(LeftTextWindow, SB_VERT, temp, TRUE);
             InvalidateRect(LeftTextWindow, NULL, TRUE);
             UpdateWindow(LeftTextWindow);
-            if (Scrolloffset != 0)  ScrollButtonPos = (DWORD)Scrolloffset;
-            Strings_On_Screen = GetEightBitsHex(LeftFile, LFGranularity, LFSIZE, Scrolloffset * 8);
+            ScrollButtonPos = (DWORD)ScrolledFilesInfo.Scrolloffset;
+            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, ScrolledFilesInfo.Scrolloffset * 8);
             ScrollButtonPos = temp;
             
         }
