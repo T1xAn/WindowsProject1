@@ -63,7 +63,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
    
     SIZE STRSIZE;
     GetClientRect(LeftTextWindow, &rt);
-    DWORD Block = Granularity, height = 0;
+    DWORD Block = Granularity, height = 1;
     char BufferString[100] = "";
     DWORD i = OFFSET;
     int SecondOffset = 0;
@@ -81,19 +81,18 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
         if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8.0);
        // if (Block / 8 < Strings_On_Screen) Block = ceil(Block / 8.0); else Block = Strings_On_Screen;
           int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
-          for(int i = 0; i < StrNumOffset; i++) height = snprintf(BufferString+i, sizeof(BufferString)-i, "%C", 0x44 );
-          snprintf(BufferString + StrNumOffset, sizeof(BufferString) - height-1, " ");
           GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, strlen(BufferString), &STRSIZE);
+
           i -= OFFSET;
           for(int count = 0 ; count < Block; count++)
              {
               
            int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
-                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ":  %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], 
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ": %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], 
                     LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
 
            TextOutA(hdcLF, 5, height, (LPCSTR)BufferString, strlen(BufferString));
-           snprintf(BufferString , sizeof(BufferString) , "| %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
+           snprintf(BufferString , sizeof(BufferString) , " | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
                LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
            TextOutA(hdcLF, 5 + SecondOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
@@ -115,10 +114,31 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
     return true;
 }
 
-SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
-    if (FONT == NULL) 
+//SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
+//    if (FONT == NULL) 
+//        FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+//    
+//    SelectObject(hdc, FONT);
+//    error = GetLastError();
+//    char buf[60];
+//    int max = 0, maxSymbol;
+//    SIZE STRSIZE;
+//    LPSIZE Size = &STRSIZE;
+//    for (int Symbol = 0x41; Symbol < 0x47; Symbol++) {
+//        snprintf(buf, sizeof(buf), "%C", Symbol);
+//        GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
+//        if (Size->cx > max) { max = Size->cx; maxSymbol = Symbol; }
+//    }
+//    snprintf(buf, sizeof(buf),": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C ", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
+//        maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol);
+//    GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
+//    return STRSIZE;
+//}
+
+SIZE FindMaxTextOffset(HFONT FONT, HDC hdc) {
+    if (FONT == NULL)
         FONT = (HFONT)GetStockObject(SYSTEM_FONT);
-    
+
     SelectObject(hdc, FONT);
     error = GetLastError();
     char buf[60];
@@ -130,9 +150,12 @@ SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
         GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
         if (Size->cx > max) { max = Size->cx; maxSymbol = Symbol; }
     }
-    snprintf(buf, sizeof(buf),": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
+    TextParam P = ScrolledFilesInfo.ReturnTextMetric();
+    //TEXTMETRIC Metric= ScrolledFilesInfo.ReturnTextMetric();
+    snprintf(buf, sizeof(buf), ": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C ", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
         maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol);
     GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
+   // int P = Metric.tmMaxCharWidth * 26;
     return STRSIZE;
 }
 
@@ -291,7 +314,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GetClientRect(hWnd, &rect);
         LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle, WS_CHILD | WS_VSCROLL | WS_BORDER | WS_CLIPSIBLINGS,
             0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, hInst, nullptr);
-        ScrolledFilesInfo.GetTextMetric(LeftTextWindow);
+        HFONT FONT = (HFONT)GetStockObject(SYSTEM_FONT);
+        ScrolledFilesInfo.GetTextMetric(LeftTextWindow, FONT);
         SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
         SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
     }
@@ -421,7 +445,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL )
         {
             
-            //ScrollButtonPos = ((Scrolloffset* 100)/(ceil((LFSIZE) / 8.0) - Strings_On_Screen));
+            ScrollButtonPos = ((ScrolledFilesInfo.Scrolloffset* 100)/(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen));
             int temp = ScrollButtonPos;
             temp = min(100, ScrollButtonPos);
            ScrolledFilesInfo.Scrolloffset = min(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen, ScrolledFilesInfo.Scrolloffset);
