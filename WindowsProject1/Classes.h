@@ -14,7 +14,7 @@ private:
 	TextParam Text_Param;
 public:
 
- int  Scrolloffset;
+ DWORDLONG  Scrolloffset;
 
 	ScrollFileInfo() {
 		Scrolloffset = 0;

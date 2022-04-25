@@ -12,39 +12,41 @@ DWORD error;
 HINSTANCE hInst;                                // текущий экземпляр
 WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
 WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
-HWND LeftTextWindow;                                  // Левое дочернее окно
+HWND LeftTextWindow;                            // Левое дочернее окно
 WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
 WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
 
+HWND TopToolBar;
 static HWND search;
 static HWND textbox;
 static HWND ReadButton;
 
  
  HANDLE LeftFile;
- wchar_t szFile[1000];
- HFONT FONT;
- int ScrollButtonPos = 0;
+ //wchar_t szFile[1000];
+ //HFONT FONT;
+ DWORDLONG ScrollButtonPos = 0;
  ScrollFileInfo ScrolledFilesInfo;
 
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
-ATOM            LTRegisterClass(HINSTANCE hInstance);
+ATOM            LeftTextWindowRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
+//SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
 //
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
 //  return Возвращает рассположение файла на компьютере
 OPENFILENAMEW buttonGetFile(){
     OPENFILENAMEW F;
+    wchar_t szFile[1000];
     ZeroMemory(&F, sizeof(F));
     F.lStructSize = sizeof(OPENFILENAME);
     F.hwndOwner = NULL;
-    F.lpstrFile = szFile;
+    F.lpstrFile = (LPWSTR)szFile;
     F.lpstrFile[0] = '\0';
     F.nMaxFile = sizeof(szFile);
     F.lpstrFilter = L"All Files\0*.*\0\0"; 
@@ -53,8 +55,10 @@ OPENFILENAMEW buttonGetFile(){
     F.nMaxFileTitle = 0;
     F.lpstrInitialDir = NULL;
     F.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
+   
     GetOpenFileName(&F);
+
+
     return F;
 }
 
@@ -72,29 +76,27 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
     OFFSET *= Granularity;
     
    HDC hdcLF = GetDC(LeftTextWindow);
-
-        STRSIZE = FindMaxTextOffset(FONT, hdcLF);
-        SecondOffset = STRSIZE.cx;
-   
-        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
+      int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+       TextParam TextMetric = ScrolledFilesInfo.ReturnTextMetric();
+       if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
-        if (Block / 8 > rt.bottom / STRSIZE.cy) Block = (rt.bottom / STRSIZE.cy); else Block = ceil(Block / 8.0);
-       // if (Block / 8 < Strings_On_Screen) Block = ceil(Block / 8.0); else Block = Strings_On_Screen;
-          int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
-          GetTextExtentPoint32A(hdcLF, (LPCSTR)BufferString, strlen(BufferString), &STRSIZE);
+        if (Block / 8 < Strings_On_Screen) Block = ceil(Block / 8.0); else Block = Strings_On_Screen;
 
+          int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", i + Block*8);
+          int StrNumOffset = StrNum;
+          StrNumOffset *= TextMetric.max_char_width;
           i -= OFFSET;
           for(int count = 0 ; count < Block; count++)
              {
               
-           int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNumOffset, i + OFFSET);
+           int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X ",StrNum, i + OFFSET);
                 BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset , ": %02X %02X %02X %02X %02X %02X %02X %02X", LRFILE[i], 
                     LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
 
            TextOutA(hdcLF, 5, height, (LPCSTR)BufferString, strlen(BufferString));
            snprintf(BufferString , sizeof(BufferString) , " | %C %C %C %C %C %C %C %C", LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
                LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);
-           TextOutA(hdcLF, 5 + SecondOffset + STRSIZE.cx, height, (LPCSTR)BufferString, strlen(BufferString));
+           TextOutA(hdcLF, 5 + TextMetric.SIZE_MAIN_STRING.cx + StrNumOffset, height, (LPCSTR)BufferString, strlen(BufferString));
            i+=8;
            if (i == Granularity) {
                UnmapViewOfFile(LRFILE);
@@ -106,7 +108,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
                i = 0;
                Block = temp;
            }
-           height += STRSIZE.cy;
+           height += TextMetric.SIZE_MAIN_STRING.cy;
             }
           ReleaseDC(LeftTextWindow, hdcLF);
         UnmapViewOfFile(LRFILE);
@@ -135,31 +137,6 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
 //    return STRSIZE;
 //}
 
-SIZE FindMaxTextOffset(HFONT FONT, HDC hdc) {
-    if (FONT == NULL)
-        FONT = (HFONT)GetStockObject(SYSTEM_FONT);
-
-    SelectObject(hdc, FONT);
-    error = GetLastError();
-    char buf[60];
-    int max = 0, maxSymbol;
-    SIZE STRSIZE;
-    LPSIZE Size = &STRSIZE;
-    for (int Symbol = 0x41; Symbol < 0x47; Symbol++) {
-        snprintf(buf, sizeof(buf), "%C", Symbol);
-        GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
-        if (Size->cx > max) { max = Size->cx; maxSymbol = Symbol; }
-    }
-    TextParam P = ScrolledFilesInfo.ReturnTextMetric();
-    //TEXTMETRIC Metric= ScrolledFilesInfo.ReturnTextMetric();
-    snprintf(buf, sizeof(buf), ": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C ", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
-        maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol);
-    GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
-   // int P = Metric.tmMaxCharWidth * 26;
-    return STRSIZE;
-}
-
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -177,7 +154,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   
     LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_LeftTextWindow, ltWindowClass, MAX_LOADSTRING);
-    LTRegisterClass(hInstance);
+    LeftTextWindowRegisterClass(hInstance);
 
     // Выполнить инициализацию приложения:
     if (!InitInstance (hInstance, nCmdShow))
@@ -186,6 +163,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
     
     ScrolledFilesInfo.GetSystemGranularity();
+   
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
 
@@ -232,7 +210,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
-ATOM LTRegisterClass(HINSTANCE hInstance)
+ATOM  LeftTextWindowRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex1;
 
@@ -246,7 +224,7 @@ ATOM LTRegisterClass(HINSTANCE hInstance)
     wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
     wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex1.lpszMenuName = MAKEINTRESOURCEW(IDC_LeftTextWindow);
+    wcex1.lpszMenuName = NULL;//MAKEINTRESOURCEW(IDC_LeftTextWindow);
     wcex1.lpszClassName = ltWindowClass;
     wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
  
@@ -271,7 +249,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
    search = CreateWindowA("button", ">>", WS_CHILD |
        WS_VISIBLE | WS_BORDER, 1050, 20, 30, 30, hWnd, (HMENU)IDB_SearchButton_Left, hInstance, nullptr);
-    textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\XP\\Logs\\VBox.log.3"),
+    textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
        WS_CHILD | WS_VISIBLE, 30, 20, 1000,
        30, hWnd, NULL, NULL, NULL);
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
@@ -316,7 +294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, hInst, nullptr);
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FONT);
         ScrolledFilesInfo.GetTextMetric(LeftTextWindow, FONT);
-        SetScrollRange(LeftTextWindow, SB_VERT, 0, 100, FALSE);
+        SetScrollRange(LeftTextWindow, SB_VERT, 0, 1000, FALSE);
         SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
     }
     case WM_SIZE:
@@ -336,7 +314,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDB_SearchButton_Left: {
                 OPENFILENAMEW File;
                    File = buttonGetFile();
-                Edit_SetText(textbox, File.lpstrFile);
+                   wchar_t szFile[1000];
+                   wcscpy_s(szFile, File.lpstrFile);
+                Edit_SetText(textbox, szFile);
                 break;
             }
             case IDB_ReadButton: {
@@ -430,32 +410,37 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case SB_LINEDOWN:
            ScrolledFilesInfo.Scrolloffset+= 1;
             break;
+        case SB_PAGEDOWN:
+            ScrolledFilesInfo.Scrolloffset += Strings_On_Screen;
+            break;
+        case SB_PAGEUP:
+            ScrolledFilesInfo.Scrolloffset -= Strings_On_Screen;
+            break;
        /* case SB_THUMBPOSITION:
             ScrollButtonPos = HIWORD(wParam);
-            Scrolloffset = ((LFSIZE) / 8 - Strings_On_Screen + 1) * ((float)ScrollButtonPos / 100);
+            ScrolledFilesInfo.Scrolloffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
             break;*/
         case SB_THUMBTRACK:
             ScrollButtonPos = HIWORD(wParam);
-            ScrolledFilesInfo.Scrolloffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 100);
+            ScrolledFilesInfo.Scrolloffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
             break;
         default:
             return 0 ;
         }
 
-        if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL )
+        if (/*ScrollButtonPos != GetScrollPos(LeftTextWindow, SB_VERT) &&*/ LeftFile!= NULL && LeftFileSize.LowPart >= Strings_On_Screen*8 )
         {
             
-            ScrollButtonPos = ((ScrolledFilesInfo.Scrolloffset* 100)/(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen));
-            int temp = ScrollButtonPos;
-            temp = min(100, ScrollButtonPos);
+          ScrollButtonPos = ceil(((ScrolledFilesInfo.Scrolloffset* 1000)/(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen)));
+            ScrollButtonPos = min(1000, ScrollButtonPos);
            ScrolledFilesInfo.Scrolloffset = min(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen, ScrolledFilesInfo.Scrolloffset);
            ScrolledFilesInfo.Scrolloffset = max(0, ScrolledFilesInfo.Scrolloffset);
-            SetScrollPos(LeftTextWindow, SB_VERT, temp, TRUE);
+            SetScrollPos(LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
             InvalidateRect(LeftTextWindow, NULL, TRUE);
             UpdateWindow(LeftTextWindow);
-            ScrollButtonPos = (DWORD)ScrolledFilesInfo.Scrolloffset;
+            //ScrollButtonPos = (DWORD)ScrolledFilesInfo.Scrolloffset;
             GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, ScrolledFilesInfo.Scrolloffset * 8);
-            ScrollButtonPos = temp;
+            //ScrollButtonPos = temp;
             
         }
         break;
@@ -466,12 +451,12 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // Разобрать выбор в меню:
         switch (wmId)
         {
-        case IDM_ABOUT:
+      /*  case IDM_ABOUT:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
             break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
-            break;
+            break;*/
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
