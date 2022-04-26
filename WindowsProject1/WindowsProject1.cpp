@@ -32,9 +32,11 @@ static HWND ReadButton;
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 ATOM            LeftTextWindowRegisterClass(HINSTANCE hInstance);
+ATOM            ToolBarRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    ToolBarProc(HWND, UINT, WPARAM, LPARAM);
 //SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
 //
 // Функция buttonGetFile(OPENFILENAME F) 
@@ -74,8 +76,14 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
     OFFSET = (OFFSET/Granularity);
 
     OFFSET *= Granularity;
-    
    HDC hdcLF = GetDC(LeftTextWindow);
+HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+ /*  SendMessage(textbox, WM_SETFONT, (WPARAM)FONT,FALSE);
+
+   HFONT hFont = (HFONT)SendMessage(textbox, WM_GETFONT, 0, 0);*/
+   
+   //SelectObject(hdcLF, FONT);
+
       int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
        TextParam TextMetric = ScrolledFilesInfo.ReturnTextMetric();
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
@@ -202,7 +210,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW-1);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT1);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -255,6 +263,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     ReadButton = CreateWindowA("button", "o", WS_CHILD |
         WS_VISIBLE | WS_BORDER, 1100, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);
   
+
    int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
    if (!hWnd)
    {
@@ -292,7 +301,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GetClientRect(hWnd, &rect);
         LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle, WS_CHILD | WS_VSCROLL | WS_BORDER | WS_CLIPSIBLINGS,
             0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, hInst, nullptr);
-        HFONT FONT = (HFONT)GetStockObject(SYSTEM_FONT);
+        HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+
         ScrolledFilesInfo.GetTextMetric(LeftTextWindow, FONT);
         SetScrollRange(LeftTextWindow, SB_VERT, 0, 1000, FALSE);
         SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
@@ -320,6 +330,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             }
             case IDB_ReadButton: {
+               /* CHOOSEFONT cf;
+                
+                memset(&cf, 0, sizeof(CHOOSEFONT));
+                cf.lStructSize = sizeof(CHOOSEFONT);
+                cf.Flags = CF_INITTOLOGFONTSTRUCT | CF_SCREENFONTS;
+                cf.hwndOwner =  LeftTextWindow;
+                cf.lpLogFont = 0;
+                cf.rgbColors = RGB(0, 0, 0);
+                ChooseFont(&cf);*/
                 InvalidateRect(LeftTextWindow, NULL, TRUE);
                 UpdateWindow(LeftTextWindow);
                 wchar_t fn1[1000];
