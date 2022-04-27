@@ -24,3 +24,4 @@
 #include <commctrl.h>
 #include "Classes.h"
 #include <queue>
+extern void ChangeMAXBYTES(int num);

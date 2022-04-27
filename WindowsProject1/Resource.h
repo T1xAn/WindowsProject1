@@ -16,6 +16,7 @@
 #define IDC_LeftTextWindow		120
 #define IDB_SearchButton_Left  1000
 #define IDB_ReadButton			1001
+#define IDB_ChangeBytesNumButton 1002
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
