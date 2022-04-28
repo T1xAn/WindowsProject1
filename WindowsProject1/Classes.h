@@ -6,8 +6,10 @@ class ScrollFileInfo
 public:
 
 	ScrollFileInfo() {
-		Scrolloffset = 0;
+		ScrollVerticalOffset = 0;
 		Granularity = 0;
+		CharOnScreen = 0;
+		ScrollHorizontalOffset = 0;
 		LeftFileSize;
 		RightFileSize;
 		TextMetric;
@@ -44,7 +46,7 @@ public:
 		 //RestoreDC(HDC,-1);
 		 return true;
 	}
-	BOOL GetNumStringsOnScreen(HWND Window) {
+	BOOL GetNumStringsAndCharOnScreen(HWND Window) {
 		RECT rt;
 		GetClientRect(Window, &rt);
 
@@ -52,6 +54,7 @@ public:
 			return false;
 
 		Strings_on_screen = (rt.bottom / TextMetric.tmHeight);
+		CharOnScreen = (rt.right*TextMetric.tmAveCharWidth);
 		return true;
 	}
 	TEXTMETRIC ReturnTextMetric() 
@@ -64,9 +67,13 @@ public:
 		return Granularity;
 	}
 
-	int ReturnStringsOnScreen() 
+	LONG ReturnStringsOnScreen() 
 	{
 		return Strings_on_screen;
+	}
+
+	LONG ReturnCharsOnScreen() {
+		return CharOnScreen;
 	}
 
 	LARGE_INTEGER ReturnLeftFileSize() 
@@ -74,12 +81,13 @@ public:
 		return LeftFileSize;
 	}
 
-	DWORDLONG  Scrolloffset;
-
+	DWORDLONG  ScrollVerticalOffset;
+	LONG ScrollHorizontalOffset;
 private:
 	DWORD Granularity;
 	LARGE_INTEGER LeftFileSize;
 	LARGE_INTEGER RightFileSize;
 	TEXTMETRIC TextMetric;
 	LONG Strings_on_screen;
+	LONG CharOnScreen;
 };
