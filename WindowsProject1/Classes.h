@@ -6,13 +6,13 @@ class ScrollFileInfo
 public:
 
 	ScrollFileInfo() {
-		ScrollVerticalOffset = 0;
-		Granularity = 0;
-		CharOnScreen = 0;
-		ScrollHorizontalOffset = 0;
-		LeftFileSize;
-		RightFileSize;
-		TextMetric;
+		m_ScrollVerticalOffset = 0;
+		m_Granularity = 0;
+		m_CharOnScreen = 0;
+		m_ScrollHorizontalOffset = 0;
+		m_LeftFileSize;
+		m_RightFileSize;
+		m_TextMetric;
 	}
 
 	~ScrollFileInfo() {};
@@ -21,18 +21,20 @@ public:
 	{
 		SYSTEM_INFO SYSINF;
 		GetSystemInfo(&SYSINF);
-		Granularity = SYSINF.dwAllocationGranularity;
-		if (Granularity == 0) 
+		m_Granularity = SYSINF.dwAllocationGranularity;
+		if (m_Granularity == 0) 
 			return false;
 		return true;
 	}
 
 	BOOL GetLeftFileSize(HANDLE LeftFile) 
 	{
-		LeftFileSize.QuadPart = 0;
-		GetFileSizeEx(LeftFile, &LeftFileSize);
-		if (LeftFileSize.QuadPart == 0) 
+		m_LeftFileSize.QuadPart = 0;
+		GetFileSizeEx(LeftFile, &m_LeftFileSize);
+
+		if (m_LeftFileSize.QuadPart == 0) 
 			return false;
+
 		return true;
 	}
 
@@ -40,54 +42,63 @@ public:
 		HDC hdc = GetDC(Window);
 		SelectObject(hdc, FONT);
 		//int indexHDC = SaveDC(hdc);
-		 GetTextMetrics(hdc, &TextMetric);
+		 GetTextMetrics(hdc, &m_TextMetric);
 		 ReleaseDC(Window, hdc);
-		 HDC HDC = GetDC(Window);
+		/* HDC HDC = GetDC(Window);*/
 		 //RestoreDC(HDC,-1);
 		 return true;
 	}
+
 	BOOL GetNumStringsAndCharOnScreen(HWND Window) {
 		RECT rt;
 		GetClientRect(Window, &rt);
 
-		if  (TextMetric.tmHeight == 0) 
+		if  (m_TextMetric.tmHeight == 0) 
 			return false;
 
-		Strings_on_screen = (rt.bottom / TextMetric.tmHeight);
-		CharOnScreen = (rt.right*TextMetric.tmAveCharWidth);
+		m_Strings_on_screen = (rt.bottom / m_TextMetric.tmHeight);
+		m_CharOnScreen = (rt.right*m_TextMetric.tmAveCharWidth);
+
 		return true;
 	}
+
+// Функция возвращает метрики выбранного шрифта
 	TEXTMETRIC ReturnTextMetric() 
 	{
-		return TextMetric;
+		return m_TextMetric;
 	}
 
+// Функция возвращает гранулярность системы
 	DWORD ReturnGranularity() 
 	{
-		return Granularity;
+		return m_Granularity;
 	}
 
+// Функция возвращает максимальное колличство строк, которое может поместиться на экране
 	LONG ReturnStringsOnScreen() 
 	{
-		return Strings_on_screen;
+		return m_Strings_on_screen;
 	}
 
+// Функция возвращает максимальное колличество символов, которое может поместиться на экране
 	LONG ReturnCharsOnScreen() {
-		return CharOnScreen;
+		return m_CharOnScreen;
 	}
 
+// Функция возвращает размер файла, открытго в левом окне
 	LARGE_INTEGER ReturnLeftFileSize() 
 	{
-		return LeftFileSize;
+		return m_LeftFileSize;
 	}
 
-	DWORDLONG  ScrollVerticalOffset;
-	LONG ScrollHorizontalOffset;
+	DWORDLONG  m_ScrollVerticalOffset;
+	LONG m_ScrollHorizontalOffset;
+
 private:
-	DWORD Granularity;
-	LARGE_INTEGER LeftFileSize;
-	LARGE_INTEGER RightFileSize;
-	TEXTMETRIC TextMetric;
-	LONG Strings_on_screen;
-	LONG CharOnScreen;
+	DWORD m_Granularity; // Гранулярность системы
+	LARGE_INTEGER m_LeftFileSize; //Размер файла открытого в левом окне
+	LARGE_INTEGER m_RightFileSize; //Размер файла открытого в правом окне
+	TEXTMETRIC m_TextMetric; // Параметры выбранного шрифта
+	LONG m_Strings_on_screen; // Целое колличество строк которое может поместиться на экране
+	LONG m_CharOnScreen; // Целое колличество символов которое может поместиться на экране
 };
