@@ -6,41 +6,14 @@
 
 #define MAX_LOADSTRING 100
 #define MAX_BYTESONSTRING 8
-#define PrintStringHex ": %02X %02X %02X %02X %02X %02X %02X %02X"
-#define PrintStringChar "| %C %C %C %C %C %C %C %C"
 
 DWORD error;
 // Глобальные переменные:
 
-HINSTANCE hInst;                                // текущий экземпляр
-WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
-WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
-HWND LeftTextWindow;                            // Левое дочернее окно
-WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
-WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
-
-HWND TopToolBar;
-HWND ChangeBytesNumButton;
-static HWND search;
-static HWND textbox;
-static HWND ReadButton;
-
-
-
  HANDLE LeftFile;
  ScrollFileInfo ScrolledFilesInfo;
+ MainWindows WindowInfo;
 
-// Отправить объявления функций, включенных в этот модуль кода:
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
-ATOM            LeftTextWindowRegisterClass(HINSTANCE hInstance);
-ATOM            ToolBarRegisterClass(HINSTANCE hInstance);
-LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK    ToolBarProc(HWND, UINT, WPARAM, LPARAM);
-//SIZE FindMaxTextOffset(HFONT FONT, HDC hdc);
-//
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
 //  return Возвращает рассположение файла на компьютере
@@ -74,13 +47,14 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
     TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
 
-   HDC hdcLF = GetDC(LeftTextWindow);
+   HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
 
     OFFSET *= Granularity;
    SelectObject(hdcLF, FONT);
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
+
         if (Block / MAX_BYTESONSTRING < Strings_On_Screen) Block = ceil(Block / (double)MAX_BYTESONSTRING); else Block = Strings_On_Screen;
 
           int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", FileSize);
@@ -123,7 +97,11 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
           /* snprintf(BufferString , sizeof(BufferString) , PrintStringChar, LRFILE[i], LRFILE[i + 1], LRFILE[i + 2], LRFILE[i + 3], 
                LRFILE[i + 4], LRFILE[i + 5], LRFILE[i + 6], LRFILE[i + 7]);*/
            int CharOffset = 0;
-                  for (int j = 0; j < MAX_BYTESONSTRING; j++) {
+                  for (int j = HexOffset; j < MAX_BYTESONSTRING; j++) {
+                      if (LRFILE[i + j] == '\0') {
+                          CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
+                          continue;
+                      }
              CharOffset +=snprintf(BufferString+CharOffset , sizeof(BufferString)-CharOffset, " %C", LRFILE[i + j]);
            }
            TextOutA(hdcLF, 5 + BufferOffset + /*StrNumOffset*/ + 5, height, (LPCSTR)BufferString, strlen(BufferString));
@@ -142,32 +120,12 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
            }
            height += TextMetric.tmHeight;
             }
-          ReleaseDC(LeftTextWindow, hdcLF);
+          ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
         UnmapViewOfFile(LRFILE);
              
     return true;
 }
 
-//SIZE FindMaxTextOffset(HFONT FONT , HDC hdc) {
-//    if (FONT == NULL) 
-//        FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
-//    
-//    SelectObject(hdc, FONT);
-//    error = GetLastError();
-//    char buf[60];
-//    int max = 0, maxSymbol;
-//    SIZE STRSIZE;
-//    LPSIZE Size = &STRSIZE;
-//    for (int Symbol = 0x41; Symbol < 0x47; Symbol++) {
-//        snprintf(buf, sizeof(buf), "%C", Symbol);
-//        GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
-//        if (Size->cx > max) { max = Size->cx; maxSymbol = Symbol; }
-//    }
-//    snprintf(buf, sizeof(buf),": %C%C %C%C %C%C %C%C %C%C %C%C %C%C %C%C ", maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol,
-//        maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol, maxSymbol);
-//    GetTextExtentPoint32A(hdc, (LPCSTR)buf, strlen(buf), Size);
-//    return STRSIZE;
-//}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -176,24 +134,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
-    // TODO: Разместите код здесь.
-
-    // Инициализация глобальных строк
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_WINDOWSPROJECT1, szWindowClass, MAX_LOADSTRING);
-    MyRegisterClass(hInstance);
-  
-    LoadStringW(hInstance, IDS_LT_TITLE, ltTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_LeftTextWindow, ltWindowClass, MAX_LOADSTRING);
-    LeftTextWindowRegisterClass(hInstance);
-
-    // Выполнить инициализацию приложения:
-    if (!InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
     
+    WindowInfo.RegisterStrings(hInstance);
+    WindowInfo.RegisterWindiwClasses(hInstance);
+
+    // Выполнение инициализации приложения
+    if (!WindowInfo.CreateAllWindow(hInstance, nCmdShow))
+        return FALSE;
+
     ScrolledFilesInfo.GetSystemGranularity();
    
 
@@ -212,119 +160,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     return (int) msg.wParam;
-}
-
-
-
-//
-//  ФУНКЦИЯ: MyRegisterClass()
-//
-//  ЦЕЛЬ: Регистрирует класс окна.
-//
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = NULL;//CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW-1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT1);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-    return RegisterClassExW(&wcex);
-}
-
-ATOM  LeftTextWindowRegisterClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex1;
-
-    wcex1.cbSize = sizeof(WNDCLASSEX);
-
-    wcex1.style = CS_NOCLOSE;
-    wcex1.lpfnWndProc = LeftProc;
-    wcex1.cbClsExtra = 0;
-    wcex1.cbWndExtra = 0;
-    wcex1.hInstance = hInstance;
-    wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
-    wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex1.lpszMenuName = NULL;//MAKEINTRESOURCEW(IDC_LeftTextWindow);
-    wcex1.lpszClassName = ltWindowClass;
-    wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
- 
-    return RegisterClassExW(&wcex1);
-}
-
-//ATOM            ToolBarRegisterClass(HINSTANCE hInstance) {
-//    WNDCLASSEXW wcex1;
-//
-//    wcex1.cbSize = sizeof(WNDCLASSEX);
-//
-//    wcex1.style = CS_NOCLOSE;
-//    wcex1.lpfnWndProc = LeftProc;
-//    wcex1.cbClsExtra = 0;
-//    wcex1.cbWndExtra = 0;
-//    wcex1.hInstance = hInstance;
-//    wcex1.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
-//    wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
-//    wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-//    wcex1.lpszMenuName = NULL;//MAKEINTRESOURCEW(IDC_LeftTextWindow);
-//    wcex1.lpszClassName = ltWindowClass;
-//    wcex1.hIconSm = LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-//
-//    return RegisterClassExW(&wcex1);
-//}
-
-//
-//   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
-//
-//   ЦЕЛЬ: Сохраняет маркер экземпляра и создает главное окно
-//
-//   КОММЕНТАРИИ:
-//
-//        В этой функции маркер экземпляра сохраняется в глобальной переменной, а также
-//        создается и выводится главное окно программы.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-   hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
-
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE|  WS_CLIPCHILDREN,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-   search = CreateWindowA("button", ">>", WS_CHILD |
-       WS_VISIBLE | WS_BORDER, 700, 20, 30, 30, hWnd, (HMENU)IDB_SearchButton_Left, hInstance, nullptr);
-    textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
-       WS_CHILD | WS_VISIBLE, 30, 20, 650,
-       30, hWnd, NULL, NULL, NULL);
-    ReadButton = CreateWindowA("button", "o!", WS_CHILD |
-        WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);  
-    ChangeBytesNumButton = CreateWindowA("button", "o?", WS_CHILD |
-        WS_VISIBLE | WS_BORDER, 800, 20, 30, 30, hWnd, (HMENU)IDB_ChangeBytesNumButton, hInstance, nullptr);
-
-   int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
-   if (!hWnd)
-   {
-      return FALSE;
-   }
-
-   if (!LeftTextWindow)
-   {
-       return FALSE;
-   }
-
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
-   ShowWindow(LeftTextWindow, nCmdShow);
-   UpdateWindow(LeftTextWindow);
-   return TRUE;
 }
 
 //
@@ -347,20 +182,22 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     case WM_CREATE: {
         RECT rect;
         GetClientRect(hWnd, &rect);
-        LeftTextWindow = CreateWindowW(ltWindowClass, ltTitle, WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER | WS_CLIPSIBLINGS,
-            0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, hInst, nullptr);
+     /*   WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER );*/
+        WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetLeftWindowClass(), (LPCWSTR)WindowInfo.GetLeftWindowTitle()
+            , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER /*| WS_CLIPSIBLINGS*/,
+            0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, WindowInfo.hInst, nullptr);
         
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
-        ScrolledFilesInfo.GetTextMetric(LeftTextWindow, FONT);
-        ShowScrollBar(LeftTextWindow, SB_HORZ, TRUE);
-        SetScrollRange(LeftTextWindow, SB_VERT, 0, 1000, FALSE);
+        ScrolledFilesInfo.GetTextMetric(WindowInfo.LeftTextWindow, FONT);
+        ShowScrollBar(WindowInfo.LeftTextWindow, SB_HORZ, TRUE);
+        SetScrollRange(WindowInfo.LeftTextWindow, SB_VERT, 0, 1000, FALSE);
         //SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
     }
     case WM_SIZE:
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
-        MoveWindow(LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
+        MoveWindow(WindowInfo.LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
         break;
     }
     case WM_COMMAND:
@@ -375,18 +212,18 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                    File = buttonGetFile();
                    wchar_t szFile[1000];
                    wcscpy_s(szFile, File.lpstrFile);
-                Edit_SetText(textbox, szFile);
+                Edit_SetText(WindowInfo.textbox, szFile);
                 break;
             }
             case IDB_ReadButton: {
     
-                InvalidateRect(LeftTextWindow, NULL, TRUE);
-                UpdateWindow(LeftTextWindow);
+                InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+                UpdateWindow(WindowInfo.LeftTextWindow);
                 wchar_t fn1[1000];
-                Edit_GetText(textbox, fn1, 1000);
+                Edit_GetText(WindowInfo.textbox, fn1, 1000);
                
                 if(LeftFile!= NULL) CloseHandle(LeftFile); 
-                HDC hdcLF = GetDC(LeftTextWindow);
+                HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
 
                 HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
                 if (LeftFile_a == (HANDLE)0xffffffff) {
@@ -404,7 +241,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 
                 GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0);
 
-                ReleaseDC(LeftTextWindow, hdcLF);
+                ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
                 
                 CloseHandle(LeftFile_a);
                
@@ -414,14 +251,13 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 int i = MAX_BYTESONSTRING;
 
               
-                ChangeMAXBYTES(i);
-
+                
                 int di = MAX_BYTESONSTRING;
            
                 break;
             }
             case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                DialogBox(WindowInfo.hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
                 if (LeftFile != NULL) CloseHandle(LeftFile);
@@ -454,7 +290,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 //
 //  ФУНКЦИЯ: LeftProc(HWND, UINT, WPARAM, LPARAM)
 //
-//  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
+//  ЦЕЛЬ: Обрабатывает сообщения в левом окне вывода.
 //
 //  WM_COMMAND  - обработать меню приложения
 //  WM_PAINT    - Отрисовка главного окна
@@ -467,7 +303,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_SIZE: {
-            ScrolledFilesInfo.GetNumStringsAndCharOnScreen(LeftTextWindow);
+            ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.LeftTextWindow);
 
         break;
     }
@@ -509,9 +345,9 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ScrollButtonPos = min(1000, ScrollButtonPos);
            ScrolledFilesInfo.m_ScrollVerticalOffset = min(ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen, ScrolledFilesInfo.m_ScrollVerticalOffset);
            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, ScrolledFilesInfo.m_ScrollVerticalOffset);
-            SetScrollPos(LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
-            InvalidateRect(LeftTextWindow, NULL, TRUE);
-            UpdateWindow(LeftTextWindow);
+            SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
+            InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+            UpdateWindow(WindowInfo.LeftTextWindow);
           
             GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
@@ -546,9 +382,9 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ScrollHorizontalButtonPos = ScrolledFilesInfo.m_ScrollHorizontalOffset;
             ScrollHorizontalButtonPos = min(50, ScrollHorizontalButtonPos);
 
-            SetScrollPos(LeftTextWindow, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
-            InvalidateRect(LeftTextWindow, NULL, TRUE);
-            UpdateWindow(LeftTextWindow);
+            SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
+            InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+            UpdateWindow(WindowInfo.LeftTextWindow);
 
             GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
@@ -563,12 +399,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // Разобрать выбор в меню:
         switch (wmId)
         {
-      /*  case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            break;
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;*/
+
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -591,6 +422,48 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
+LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    RECT rect;
+    switch (message)
+    {
+    case WM_CREATE: {
+
+    }
+
+    case WM_SIZE: {
+        
+
+        break;
+    }
+    case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Разобрать выбор в меню:
+        switch (wmId)
+        {
+
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    }
+    break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
 
 // Обработчик сообщений для окна "О программе".
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

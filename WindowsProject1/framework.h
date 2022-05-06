@@ -25,4 +25,4 @@
 #include "Classes.h"
 #include <queue>
 #include <algorithm>
-extern void ChangeMAXBYTES(int num);
+
