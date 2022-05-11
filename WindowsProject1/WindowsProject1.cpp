@@ -136,7 +136,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
     
     WindowInfo.RegisterStrings(hInstance);
-    WindowInfo.RegisterWindiwClasses(hInstance);
+    WindowInfo.RegisterWindowClasses(hInstance);
 
     // Выполнение инициализации приложения
     if (!WindowInfo.CreateAllWindow(hInstance, nCmdShow))
@@ -185,19 +185,29 @@ LRESULT CALLBACK WndProc(HWND hWnd,
      /*   WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER );*/
         WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetLeftWindowClass(), (LPCWSTR)WindowInfo.GetLeftWindowTitle()
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER /*| WS_CLIPSIBLINGS*/,
-            0, 80, rect.right / 2, rect.bottom - 80, hWnd, nullptr, WindowInfo.hInst, nullptr);
-        
+            0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
+
+        WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
+            rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
+
+        WindowInfo.RightTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetRightWindowClass(), NULL
+            , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER /*| WS_CLIPSIBLINGS*/,
+            rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
+      error =   GetLastError();
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
         ScrolledFilesInfo.GetTextMetric(WindowInfo.LeftTextWindow, FONT);
         ShowScrollBar(WindowInfo.LeftTextWindow, SB_HORZ, TRUE);
         SetScrollRange(WindowInfo.LeftTextWindow, SB_VERT, 0, 1000, FALSE);
+
         //SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
     }
     case WM_SIZE:
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
-        MoveWindow(WindowInfo.LeftTextWindow, 0, 80, rc.right / 2, rc.bottom - 80, TRUE);
+        MoveWindow(WindowInfo.LeftTextWindow, 0, ceil(rc.bottom * 0.1), rc.right / 2, ceil(rc.bottom * 0.9), TRUE);
+        MoveWindow(WindowInfo.ToolBar, 0, 0, rc.right, ceil(rc.bottom * 0.1), TRUE);
+        MoveWindow(WindowInfo.RightTextWindow, rc.right/2, ceil(rc.bottom * 0.1), rc.right / 2, ceil(rc.bottom * 0.9), TRUE);
         break;
     }
     case WM_COMMAND:
@@ -207,55 +217,55 @@ LRESULT CALLBACK WndProc(HWND hWnd,
             // Разобрать выбор в меню:
             switch (wmId)
             {
-            case IDB_SearchButton_Left: {
-                OPENFILENAMEW File;
-                   File = buttonGetFile();
-                   wchar_t szFile[1000];
-                   wcscpy_s(szFile, File.lpstrFile);
-                Edit_SetText(WindowInfo.textbox, szFile);
-                break;
-            }
-            case IDB_ReadButton: {
+            //case IDB_SearchButton_Left: {
+            //    OPENFILENAMEW File;
+            //       File = buttonGetFile();
+            //       wchar_t szFile[1000];
+            //       wcscpy_s(szFile, File.lpstrFile);
+            //    Edit_SetText(WindowInfo.textbox, szFile);
+            //    break;
+            //}
+            //case IDB_ReadButton: {
     
-                InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
-                UpdateWindow(WindowInfo.LeftTextWindow);
-                wchar_t fn1[1000];
-                Edit_GetText(WindowInfo.textbox, fn1, 1000);
-               
-                if(LeftFile!= NULL) CloseHandle(LeftFile); 
-                HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
+            //    InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+            //    UpdateWindow(WindowInfo.LeftTextWindow);
+            //    wchar_t fn1[1000];
+            //    Edit_GetText(WindowInfo.textbox, fn1, 1000);
+            //   
+            //    if(LeftFile!= NULL) CloseHandle(LeftFile); 
+            //    HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
 
-                HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-                if (LeftFile_a == (HANDLE)0xffffffff) {
-                    MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
-                        L"Произошла ошибка при открытии файла:", MB_OK);
-                    //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
-                    break;
-                }
+            //    HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            //    if (LeftFile_a == (HANDLE)0xffffffff) {
+            //        MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
+            //            L"Произошла ошибка при открытии файла:", MB_OK);
+            //        //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
+            //        break;
+            //    }
 
-                ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
-                LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+            //    ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
+            //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
 
-                LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-                if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
-                
-                GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0);
+            //    LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+            //    if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
+            //    
+            //    GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0);
 
-                ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
-                
-                CloseHandle(LeftFile_a);
-               
-                break;
-            }
-            case IDB_ChangeBytesNumButton: {
-                int i = MAX_BYTESONSTRING;
+            //    ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
+            //    
+            //    CloseHandle(LeftFile_a);
+            //   
+            //    break;
+            //}
+            //case IDB_ChangeBytesNumButton: {
+            //    int i = MAX_BYTESONSTRING;
 
-              
-                
-                int di = MAX_BYTESONSTRING;
+            //  
+            //    
+            //    int di = MAX_BYTESONSTRING;
            
-                break;
-            }
+            //    break;
+            //}
             case IDM_ABOUT:
                 DialogBox(WindowInfo.hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -428,13 +438,208 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE: {
-
+        RECT rect;
+        GetClientRect(hWnd, &rect);
+        int sc = GetSystemMetrics(SM_CXVSCROLL);
+        WindowInfo.LeftTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
+            WS_CHILD | WS_VISIBLE, 1, 1, ceil(rect.right/2-rect.right*0.01-sc)-5, 20, hWnd, NULL, NULL, NULL);
+        WindowInfo.LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1, ceil(rect.right * 0.01 + sc),
+            20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
+        WindowInfo.ReadButton = CreateWindowA("button", "Сравнить", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);
+        WindowInfo.RightTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("WORK IN PROGRESS"),
+            WS_CHILD | WS_VISIBLE, rect.right/2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
+        WindowInfo.RightSearch = CreateWindowA("button", ">>", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
+            hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
+        /*WindowInfo.List = CreateWindowA("button", "Сравнить", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);*/
     }
 
     case WM_SIZE: {
-        
-
+        RECT rect;
+        GetClientRect(hWnd, &rect);
+        int sc = GetSystemMetrics(SM_CXVSCROLL);
+        MoveWindow(WindowInfo.LeftTextbox, 1, 1 , ceil(rect.right / 2 - rect.right * 0.01 - sc)-5, 20, TRUE);
+        MoveWindow(WindowInfo.LeftSearch,  ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1,ceil(rect.right*0.01+sc), 20, TRUE);
+        MoveWindow(WindowInfo.RightTextbox, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, TRUE);
+        MoveWindow(WindowInfo.RightSearch, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20, TRUE);
         break;
+    }
+    case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Разобрать выбор в меню:
+        switch (wmId)
+        {
+
+        case IDB_SearchButton_Left: {
+            OPENFILENAMEW File;
+            File = buttonGetFile();
+            wchar_t szFile[1000];
+            wcscpy_s(szFile, File.lpstrFile);
+            Edit_SetText(WindowInfo.LeftTextbox, szFile);
+            break;
+        }
+        case IDB_ReadButton: {
+
+            InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+            UpdateWindow(WindowInfo.LeftTextWindow);
+            wchar_t fn1[1000];
+            Edit_GetText(WindowInfo.LeftTextbox, fn1, 1000);
+
+            if (LeftFile != NULL) CloseHandle(LeftFile);
+            HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
+
+            HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            if (LeftFile_a == (HANDLE)0xffffffffffffffff) {
+                MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
+                    L"Произошла ошибка при открытии файла:", MB_OK);
+                //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
+                break;
+            }
+
+            ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
+            LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+
+            LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+            if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
+
+            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0);
+
+            ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
+
+            CloseHandle(LeftFile_a);
+
+            break;
+        }
+        case IDB_ChangeBytesNumButton: {
+            int i = MAX_BYTESONSTRING;
+
+
+
+            int di = MAX_BYTESONSTRING;
+
+            break;
+        }
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    }
+    break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+
+LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    RECT rect;
+    switch (message)
+    {
+    case WM_SIZE: {
+       // ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.LeftTextWindow);
+        break;
+    }
+    case WM_VSCROLL: {
+    //    DWORDLONG ScrollButtonPos = 0;
+    //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+    //    int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+
+    //    switch (LOWORD(wParam)) {
+
+    //    case SB_LINEUP:
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset -= 1;
+    //        break;
+    //    case SB_LINEDOWN:
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset += 1;
+    //        break;
+    //    case SB_PAGEDOWN:
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset += Strings_On_Screen;
+    //        break;
+    //    case SB_PAGEUP:
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset -= Strings_On_Screen;
+    //        break;
+    //        /* case SB_THUMBPOSITION:
+    //             ScrollButtonPos = HIWORD(wParam);
+    //             ScrolledFilesInfo.ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+    //             break;*/
+    //    case SB_THUMBTRACK:
+    //        ScrollButtonPos = HIWORD(wParam);
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+    //        break;
+    //    default:
+    //        return 0;
+    //    }
+
+    //    if (LeftFile != NULL && LeftFileSize.LowPart >= Strings_On_Screen * 8)
+    //    {
+
+    //        ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset * 1000) / (ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen)));
+    //        ScrollButtonPos = min(1000, ScrollButtonPos);
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset = min(ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen, ScrolledFilesInfo.m_ScrollVerticalOffset);
+    //        ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, ScrolledFilesInfo.m_ScrollVerticalOffset);
+    //        SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
+    //        InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+    //        UpdateWindow(WindowInfo.LeftTextWindow);
+
+    //        GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
+    //            ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+
+    //    }
+    //    break;
+    //}
+    //case WM_HSCROLL: {
+    //    DWORDLONG ScrollHorizontalButtonPos = 0;
+    //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+    //    LONG CharOnString = ScrolledFilesInfo.ReturnCharsOnScreen();
+    //    switch (LOWORD(wParam)) {
+
+    //    case SB_LINELEFT:
+    //        ScrolledFilesInfo.m_ScrollHorizontalOffset -= 1;
+    //        break;
+    //    case SB_LINERIGHT:
+    //        ScrolledFilesInfo.m_ScrollHorizontalOffset += 1;
+    //        break;
+    //    case SB_THUMBTRACK:
+    //        ScrollHorizontalButtonPos = HIWORD(wParam);
+    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = ScrollHorizontalButtonPos;
+    //        break;
+    //    default:
+    //        return 0;
+    //    }
+
+    //    if (LeftFile != NULL /*&& LeftFileSize.LowPart >= Strings_On_Screen * 8*/)
+    //    {
+    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = min(50, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = max(0, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+    //        ScrollHorizontalButtonPos = ScrolledFilesInfo.m_ScrollHorizontalOffset;
+    //        ScrollHorizontalButtonPos = min(50, ScrollHorizontalButtonPos);
+
+    //        SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
+    //        InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+    //        UpdateWindow(WindowInfo.LeftTextWindow);
+
+    //        GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
+    //            ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+
+    //    }
+    //    break;
+
     }
     case WM_COMMAND:
     {

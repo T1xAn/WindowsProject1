@@ -15,7 +15,9 @@
 #define IDS_LT_TITLE			121
 #define IDC_LeftTextWindow		120
 #define IDC_TOOLBARWINDOW		122
+#define IDC_RIGHTTEXTWINDOW		123
 
+#define IDB_SearchButton_Right 1003
 #define IDB_SearchButton_Left  1000
 #define IDB_ReadButton			1001
 #define IDB_ChangeBytesNumButton 1002

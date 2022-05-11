@@ -109,8 +109,8 @@ private:
 LRESULT CALLBACK    LeftProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK    ToolBarProc(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK    ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK    RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 class MainWindows {
 public:
@@ -127,6 +127,8 @@ public:
 		LoadStringW(hInstance, IDC_LeftTextWindow, ltWindowClass, MAX_LOADSTRING);
 
 		LoadStringW(hInstance, IDC_TOOLBARWINDOW, tbWindowClass, MAX_LOADSTRING);
+
+		LoadStringW(hInstance, IDC_RIGHTTEXTWINDOW, rtWindowClass, MAX_LOADSTRING);
 	}
 
 	// Регестрация класса главного окна
@@ -171,6 +173,7 @@ public:
 		return RegisterClassExW(&wcex1);
 	}
 
+	// Регистрация класса для окна инструментов
 	ATOM ToolBarWindowClass(HINSTANCE hInstance) {
 		WNDCLASSEXW wcex1;
 
@@ -183,7 +186,7 @@ public:
 		wcex1.hInstance = hInstance;
 		wcex1.hIcon = NULL;/*LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));*/
 		wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
-		wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+		wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW - 1);
 		wcex1.lpszMenuName = NULL;//MAKEINTRESOURCEW(IDC_LeftTextWindow);
 		wcex1.lpszClassName = tbWindowClass;
 		wcex1.hIconSm = NULL;/*LoadIcon(wcex1.hInstance, MAKEINTRESOURCE(IDI_SMALL));*/
@@ -191,12 +194,39 @@ public:
 		return RegisterClassExW(&wcex1);
 
 	}
+
+	// Регистрация класса правого окна вывода
+	ATOM RightWindowClass(HINSTANCE hInstance) {
+		WNDCLASSEXW wcex1;
+
+		wcex1.cbSize = sizeof(WNDCLASSEX);
+
+		wcex1.style = CS_NOCLOSE;
+		wcex1.lpfnWndProc = RightProc;
+		wcex1.cbClsExtra = 0;
+		wcex1.cbWndExtra = 0;
+		wcex1.hInstance = hInstance;
+		wcex1.hIcon = NULL;
+		wcex1.hCursor = LoadCursor(nullptr, IDC_ARROW);
+		wcex1.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+		wcex1.lpszMenuName = NULL;//MAKEINTRESOURCEW(IDC_LeftTextWindow);
+		wcex1.lpszClassName = rtWindowClass;
+		wcex1.hIconSm = NULL;
+
+		 return RegisterClassExW(&wcex1);
+		
+	}
+
 	// Функция регистрации классов всех окон приложения
-	BOOL RegisterWindiwClasses(HINSTANCE hInstance) {
+	BOOL RegisterWindowClasses(HINSTANCE hInstance) {
 		
 		if (MainWindowClass(hInstance) == 0)
 			return FALSE;
 		if (LeftWindowClass(hInstance) == 0)
+			return FALSE;
+		if (ToolBarWindowClass(hInstance) == 0)
+			return FALSE;
+		if (RightWindowClass(hInstance) == 0)
 			return FALSE;
 		return TRUE;
 	}
@@ -206,15 +236,15 @@ public:
 
 		HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_CLIPCHILDREN,
 			CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-		search = CreateWindowA("button", ">>", WS_CHILD |
+		/*search = CreateWindowA("button", ">>", WS_CHILD |
 			WS_VISIBLE | WS_BORDER, 700, 20, 30, 30, hWnd, (HMENU)IDB_SearchButton_Left, hInstance, nullptr);
 		textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
 			WS_CHILD | WS_VISIBLE, 30, 20, 650,
 			30, hWnd, NULL, NULL, NULL);
 		ReadButton = CreateWindowA("button", "o!", WS_CHILD |
-			WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);
-		ChangeBytesNumButton = CreateWindowA("button", "o?", WS_CHILD |
-			WS_VISIBLE | WS_BORDER, 800, 20, 30, 30, hWnd, (HMENU)IDB_ChangeBytesNumButton, hInstance, nullptr);
+			WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);*/
+		/*ChangeBytesNumButton = CreateWindowA("button", "o?", WS_CHILD |
+			WS_VISIBLE | WS_BORDER, 800, 20, 30, 30, hWnd, (HMENU)IDB_ChangeBytesNumButton, hInstance, nullptr);*/
 
 		//int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
 		if (!hWnd)
@@ -227,10 +257,23 @@ public:
 			return FALSE;
 		}
 
+		if (!ToolBar)
+		{
+			return FALSE;
+		}
+
+		if (!RightTextWindow) {
+			return FALSE;
+		}
+
 		ShowWindow(hWnd, nCmdShow);
 		UpdateWindow(hWnd);
 		ShowWindow(LeftTextWindow, nCmdShow);
 		UpdateWindow(LeftTextWindow);
+		ShowWindow(ToolBar, nCmdShow);
+		UpdateWindow(ToolBar);
+		ShowWindow(RightTextWindow, nCmdShow);
+		UpdateWindow(RightTextWindow);
 		return TRUE;
 	}
 
@@ -248,13 +291,21 @@ public:
 		return tbWindowClass;
 	}
 
+	// Функция возвращает имя класса правого окна вывода
+	WCHAR* GetRightWindowClass() {
+		return rtWindowClass;
+	}
+
 	HINSTANCE hInst;
-	HWND TopToolBar;
 	HWND ChangeBytesNumButton;
-	HWND search;
-	HWND textbox;
+	HWND LeftSearch;
+	HWND LeftTextbox;
+	HWND RightSearch;
+	HWND RightTextbox;
 	HWND ReadButton;
+	HWND List;
 	HWND LeftTextWindow;    // Левое дочернее окно вывода
+	HWND RightTextWindow;	// Правое дочернее окно вывода
 	HWND ToolBar;			// Окно инстументов
 
 private:
@@ -266,4 +317,6 @@ private:
 	WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна
 
 	WCHAR tbWindowClass[MAX_LOADSTRING];			// Имя класса окна инструментов
+
+	WCHAR rtWindowClass[MAX_LOADSTRING];			// Имя класса правого дочернего окна
 };
