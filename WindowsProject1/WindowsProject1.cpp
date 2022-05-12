@@ -182,7 +182,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     case WM_CREATE: {
         RECT rect;
         GetClientRect(hWnd, &rect);
-     /*   WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER );*/
+        int screen_height = GetSystemMetrics(SM_CYSCREEN);
         WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetLeftWindowClass(), (LPCWSTR)WindowInfo.GetLeftWindowTitle()
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER /*| WS_CLIPSIBLINGS*/,
             0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
@@ -205,67 +205,23 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
-        MoveWindow(WindowInfo.LeftTextWindow, 0, ceil(rc.bottom * 0.1), rc.right / 2, ceil(rc.bottom * 0.9), TRUE);
-        MoveWindow(WindowInfo.ToolBar, 0, 0, rc.right, ceil(rc.bottom * 0.1), TRUE);
-        MoveWindow(WindowInfo.RightTextWindow, rc.right/2, ceil(rc.bottom * 0.1), rc.right / 2, ceil(rc.bottom * 0.9), TRUE);
+
+        int Screen_height = GetSystemMetrics(SM_CYFULLSCREEN);
+        int Menu_height = GetSystemMetrics(SM_CYMENUSIZE);
+        //int rr = GetSystemMetrics(SM_CYCAPTION);
+        //SystemParametersInfo(SPI_GETWORKAREA, NULL , &rc, NULL);
+        MoveWindow(WindowInfo.LeftTextWindow, 0, ceil((Screen_height - Menu_height)*0.1), rc.right / 2, ceil(rc.bottom-(Screen_height - Menu_height) * 0.1), TRUE);
+        MoveWindow(WindowInfo.ToolBar, 0, 0, rc.right, ceil((Screen_height - Menu_height) * 0.1), TRUE);
+        MoveWindow(WindowInfo.RightTextWindow, rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
         break;
     }
     case WM_COMMAND:
         {
-            
+      
             int wmId = LOWORD(wParam);
             // Разобрать выбор в меню:
             switch (wmId)
             {
-            //case IDB_SearchButton_Left: {
-            //    OPENFILENAMEW File;
-            //       File = buttonGetFile();
-            //       wchar_t szFile[1000];
-            //       wcscpy_s(szFile, File.lpstrFile);
-            //    Edit_SetText(WindowInfo.textbox, szFile);
-            //    break;
-            //}
-            //case IDB_ReadButton: {
-    
-            //    InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
-            //    UpdateWindow(WindowInfo.LeftTextWindow);
-            //    wchar_t fn1[1000];
-            //    Edit_GetText(WindowInfo.textbox, fn1, 1000);
-            //   
-            //    if(LeftFile!= NULL) CloseHandle(LeftFile); 
-            //    HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
-
-            //    HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-            //    if (LeftFile_a == (HANDLE)0xffffffff) {
-            //        MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
-            //            L"Произошла ошибка при открытии файла:", MB_OK);
-            //        //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
-            //        break;
-            //    }
-
-            //    ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
-            //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-
-            //    LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-            //    if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
-            //    
-            //    GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0);
-
-            //    ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
-            //    
-            //    CloseHandle(LeftFile_a);
-            //   
-            //    break;
-            //}
-            //case IDB_ChangeBytesNumButton: {
-            //    int i = MAX_BYTESONSTRING;
-
-            //  
-            //    
-            //    int di = MAX_BYTESONSTRING;
-           
-            //    break;
-            //}
             case IDM_ABOUT:
                 DialogBox(WindowInfo.hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -441,6 +397,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         RECT rect;
         GetClientRect(hWnd, &rect);
         int sc = GetSystemMetrics(SM_CXVSCROLL);
+       
         WindowInfo.LeftTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
             WS_CHILD | WS_VISIBLE, 1, 1, ceil(rect.right/2-rect.right*0.01-sc)-5, 20, hWnd, NULL, NULL, NULL);
         WindowInfo.LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
@@ -453,6 +410,9 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         WindowInfo.RightSearch = CreateWindowA("button", ">>", WS_CHILD |
             WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
             hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
+        WindowInfo.ChangeFont = CreateWindowA("button", "WORK IN PRIGRESS", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, 0, 0, 0, 0,
+            hWnd, (HMENU)IDB_Change_Font, WindowInfo.hInst, nullptr);
         /*WindowInfo.List = CreateWindowA("button", "Сравнить", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);*/
     }
@@ -460,11 +420,14 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_SIZE: {
         RECT rect;
         GetClientRect(hWnd, &rect);
+     
         int sc = GetSystemMetrics(SM_CXVSCROLL);
-        MoveWindow(WindowInfo.LeftTextbox, 1, 1 , ceil(rect.right / 2 - rect.right * 0.01 - sc)-5, 20, TRUE);
-        MoveWindow(WindowInfo.LeftSearch,  ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1,ceil(rect.right*0.01+sc), 20, TRUE);
-        MoveWindow(WindowInfo.RightTextbox, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, TRUE);
-        MoveWindow(WindowInfo.RightSearch, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20, TRUE);
+        MoveWindow(WindowInfo.LeftTextbox, 1, 1 , ceil(rect.right / 2 - rect.right * 0.01 - sc)-5, ceil(rect.bottom *0.33), TRUE);
+        MoveWindow(WindowInfo.LeftSearch,  ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1,ceil(rect.right*0.01+sc), ceil(rect.bottom * 0.33), TRUE);
+        MoveWindow(WindowInfo.RightTextbox, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), ceil(rect.bottom * 0.33), TRUE);
+        MoveWindow(WindowInfo.RightSearch, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), ceil(rect.bottom * 0.33), TRUE);
+        MoveWindow(WindowInfo.ReadButton, 1, ceil(rect.bottom * 0.33) + 1, ceil(rect.right*0.2),ceil(rect.bottom * 0.33) ,TRUE);
+        MoveWindow(WindowInfo.ChangeFont, 1, (ceil(rect.bottom * 0.33) + 1)*2, ceil(rect.right * 0.2), ceil(rect.bottom * 0.3), TRUE);
         break;
     }
     case WM_COMMAND:

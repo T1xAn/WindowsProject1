@@ -303,6 +303,7 @@ public:
 	HWND RightSearch;
 	HWND RightTextbox;
 	HWND ReadButton;
+	HWND ChangeFont;
 	HWND List;
 	HWND LeftTextWindow;    // Левое дочернее окно вывода
 	HWND RightTextWindow;	// Правое дочернее окно вывода
