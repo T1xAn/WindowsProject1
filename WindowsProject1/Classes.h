@@ -12,6 +12,7 @@ public:
 		m_Granularity = 0;
 		m_CharOnScreen = 0;
 		m_ScrollHorizontalOffset = 0;
+		m_BytesOnString = 8;
 		m_LeftFileSize;
 		m_RightFileSize;
 		m_TextMetric;
@@ -59,11 +60,23 @@ public:
 			return false;
 
 		m_Strings_on_screen = (rt.bottom / m_TextMetric.tmHeight);
-		m_CharOnScreen = (rt.right*m_TextMetric.tmAveCharWidth);
+		m_CharOnScreen = (rt.right/m_TextMetric.tmAveCharWidth);
 
 		return true;
 	}
 
+	LONG HorizontalOffset() {
+		char BufferString[100];
+		if (m_LeftFileSize.LowPart != 0) {
+			int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", m_LeftFileSize.LowPart);
+			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
+			if (OutString > m_CharOnScreen)
+				return (OutString - m_CharOnScreen - 2*m_BytesOnString);
+			else
+				return 0;
+		}
+		return 0;
+	}
 // Функция возвращает метрики выбранного шрифта
 	TEXTMETRIC ReturnTextMetric() 
 	{
@@ -95,9 +108,9 @@ public:
 
 	DWORDLONG  m_ScrollVerticalOffset;
 	LONG m_ScrollHorizontalOffset;
+	LONG m_BytesOnString;
 
 private:
-
 	DWORD m_Granularity; // Гранулярность системы
 	LARGE_INTEGER m_LeftFileSize; //Размер файла открытого в левом окне
 	LARGE_INTEGER m_RightFileSize; //Размер файла открытого в правом окне
@@ -236,16 +249,6 @@ public:
 
 		HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_CLIPCHILDREN,
 			CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-		/*search = CreateWindowA("button", ">>", WS_CHILD |
-			WS_VISIBLE | WS_BORDER, 700, 20, 30, 30, hWnd, (HMENU)IDB_SearchButton_Left, hInstance, nullptr);
-		textbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
-			WS_CHILD | WS_VISIBLE, 30, 20, 650,
-			30, hWnd, NULL, NULL, NULL);
-		ReadButton = CreateWindowA("button", "o!", WS_CHILD |
-			WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, hInstance, nullptr);*/
-		/*ChangeBytesNumButton = CreateWindowA("button", "o?", WS_CHILD |
-			WS_VISIBLE | WS_BORDER, 800, 20, 30, 30, hWnd, (HMENU)IDB_ChangeBytesNumButton, hInstance, nullptr);*/
-
 		//int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
 		if (!hWnd)
 		{
@@ -274,6 +277,9 @@ public:
 		UpdateWindow(ToolBar);
 		ShowWindow(RightTextWindow, nCmdShow);
 		UpdateWindow(RightTextWindow);
+
+		ShowWindow(List, nCmdShow);
+		UpdateWindow(List);
 		return TRUE;
 	}
 
