@@ -52,6 +52,7 @@ public:
 		 return true;
 	}
 
+	// Расчёт максимально возможного количества строк на экране и символов в строке
 	BOOL GetNumStringsAndCharOnScreen(HWND Window) {
 		RECT rt;
 		GetClientRect(Window, &rt);
@@ -65,13 +66,20 @@ public:
 		return true;
 	}
 
+	// Подсчёт ограничителей для горизонтальной полосы прокрутки
 	LONG HorizontalOffset() {
 		char BufferString[100];
 		if (m_LeftFileSize.LowPart != 0) {
 			int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", m_LeftFileSize.LowPart);
 			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
-			if (OutString > m_CharOnScreen)
-				return (OutString - m_CharOnScreen - 2*m_BytesOnString);
+			int ReturnScroll = 0;
+			if (OutString > m_CharOnScreen) {
+				if ((ceil(OutString - m_CharOnScreen)) < (StrNum + 2)) 
+					ReturnScroll = OutString - m_CharOnScreen;
+				else 
+					ReturnScroll = StrNum + 2 + (ceil((OutString - m_CharOnScreen - StrNum + 2) / 3));
+				return ReturnScroll;
+			}
 			else
 				return 0;
 		}
