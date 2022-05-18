@@ -38,11 +38,12 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD OFFSET, LONG HorizontalOffset , LONG BytesOnString) {
+BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString) {
     DWORD Block = Granularity, height = 1;
     char BufferString[256] = ""; // РАЗМЕРНОСТЬ
     OFFSET *= BytesOnString;
-    DWORD i = OFFSET;
+    //OFFSET = 9525264384 - ScrolledFilesInfo.ReturnStringsOnScreen()*8;
+    DWORDLONG i = OFFSET;
     int SecondOffset = 0;
     OFFSET = (OFFSET/Granularity);
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
@@ -52,20 +53,22 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
 
     OFFSET *= Granularity;
+    DWORD HighOffset = ((OFFSET >> 32) & 0xFFFFFFFFul);
+    DWORD LowOffset = static_cast<DWORD>(OFFSET & 0xFFFFFFFFul);
    SelectObject(hdcLF, FONT);
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
-        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block);
+        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
         error = GetLastError();
         if (Block / BytesOnString < Strings_On_Screen) Block = ceil(Block / (double)BytesOnString); else Block = Strings_On_Screen;
 
-          int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", FileSize);
+          int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", FileSize);
          
          
           int HexOffset = 0;
           i -= OFFSET;
           for(int count = 0 ; count < Block; count++)
              {
-              int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*X :", StrNum, i + OFFSET);
+              int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*llX :", StrNum, i + OFFSET);
               if (HorizontalOffset != 0) {
                   if (HorizontalOffset > BufferOffset) {
                       HexOffset = HorizontalOffset - BufferOffset;
@@ -115,7 +118,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORD FileSize, DWORD O
                Block = Granularity;
                OFFSET = (((OFFSET / Granularity) + 1) * Granularity);
                if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
-               PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, 0, OFFSET, Block); 
+               PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
                i = 0;
                Block = temp;
            }
@@ -144,7 +147,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
 
     ScrolledFilesInfo.GetSystemGranularity();
-   
+    DWORDLONG offset = 9525264384;
+    DWORD high = ((offset >> 32) & 0xFFFFFFFFul);
+    DWORD low = static_cast<DWORD>(offset & 0xFFFFFFFFul);
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
 
@@ -311,24 +316,24 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;*/
         case SB_THUMBTRACK: 
             ScrollButtonPos = HIWORD(wParam);
-            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
             break;
         default:
            break ;
         }
 
-        if (LeftFile!= NULL && LeftFileSize.LowPart >= Strings_On_Screen*8 )
+        if (LeftFile!= NULL && LeftFileSize.QuadPart >= Strings_On_Screen*8 )
         {
             
-          ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset* 1000)/(ceil(LeftFileSize.LowPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
+          ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset* 1000)/(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
             ScrollButtonPos = min(1000, ScrollButtonPos);
-            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(LeftFileSize.LowPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
+            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
                 ScrolledFilesInfo.m_ScrollVerticalOffset)));
             SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
-            InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+           InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
             UpdateWindow(WindowInfo.LeftTextWindow);
           
-            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
+            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
             
         }
@@ -367,7 +372,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
             UpdateWindow(WindowInfo.LeftTextWindow);
 
-            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
+            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset , ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
 
         }
@@ -413,7 +418,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GetClientRect(hWnd, &rect);
         int sc = GetSystemMetrics(SM_CXVSCROLL);
        
-        WindowInfo.LeftTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboXP\\TurboXP.vdi"),
+        WindowInfo.LeftTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
             WS_CHILD | WS_VISIBLE, 1, 1, ceil(rect.right/2-rect.right*0.01-sc)-5, 20, hWnd, NULL, NULL, NULL);
         WindowInfo.LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
             WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1, ceil(rect.right * 0.01 + sc),
@@ -487,8 +492,9 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (LeftFile_a == (HANDLE)0xffffffffffffffff) {
-                MessageBox(NULL, L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album",
+                MessageBox(NULL, L"Exorcizo te, immundissime spiritus, omnis incursio adversarii, omne phantasma, omnis legio, in nomine Domini nostri Jesu Christi eradicare, et effugare ab hoc plasmate Dei. Ipse tibi imperat, qui te de supernis caelorum in inferiora terrae demergi praecepit. Ipse tibi imperat, qui mari, ventis, et tempestatibus impersvit. Audi ergo, et time, satana, inimice fidei, hostis generis humani, mortis adductor, vitae raptor, justitiae declinator, malorum radix, fomes vitiorum, seductor hominum, proditor gentium, incitator invidiae, origo avaritiae, causa discordiae, excitator dolorum: quid stas, et resistis, cum scias. Christum Dominum vias tuas perdere? Illum metue, qui in Isaac immolatus est, in joseph venumdatus, in sgno occisus, in homine cruci- fixus, deinde inferni triumphator fuit. Sequentes cruces fiant in fronte obsessi. Recede ergo in nomine Patris et Filii, et Spiritus Sancti: da locum Spiritui Sancto, per hoc signum sanctae Cruci Jesu Christi Domini nostri: Qui cum Patre et eodem Spiritu Sancto vivit et regnat Deus, Per omnia saecula saeculorum. Et cum spiritu tuo. Amen.",
                     L"Произошла ошибка при открытии файла:", MB_OK);
+                ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
                 CloseHandle(LeftFile_a);
                 //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
                 break;
@@ -501,7 +507,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
             if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
 
-            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart, 0, 0, ScrolledFilesInfo.m_BytesOnString);
+            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart, 0, 0, ScrolledFilesInfo.m_BytesOnString);
 
             ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
 

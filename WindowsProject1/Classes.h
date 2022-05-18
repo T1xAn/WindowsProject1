@@ -1,6 +1,7 @@
 #pragma once
 #include "framework.h"
 #include "Resource.h"
+
 #define MAX_LOADSTRING 100
 
 class ScrollFileInfo
@@ -69,8 +70,8 @@ public:
 	// Подсчёт ограничителей для горизонтальной полосы прокрутки
 	LONG HorizontalOffset() {
 		char BufferString[100];
-		if (m_LeftFileSize.LowPart != 0) {
-			int StrNum = snprintf(BufferString, sizeof(BufferString), "%X", m_LeftFileSize.LowPart);
+		if (m_LeftFileSize.QuadPart != 0) {
+			int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX" /*PRIX64*/, m_LeftFileSize.QuadPart);
 			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
 			int ReturnScroll = 0;
 			if (OutString > m_CharOnScreen) {
