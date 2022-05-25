@@ -17,6 +17,7 @@ public:
 		m_LeftFileSize;
 		m_RightFileSize;
 		m_TextMetric;
+		m_wheelOffset = 0;
 	}
 
 	~ScrollFileInfo() {};
@@ -37,6 +38,17 @@ public:
 		GetFileSizeEx(LeftFile, &m_LeftFileSize);
 
 		if (m_LeftFileSize.QuadPart == 0) 
+			return false;
+
+		return true;
+	}
+
+	BOOL GetRightFileSize(HANDLE RightFile)
+	{
+		m_RightFileSize.QuadPart = 0;
+		GetFileSizeEx(RightFile, &m_RightFileSize);
+
+		if (m_RightFileSize.QuadPart == 0)
 			return false;
 
 		return true;
@@ -114,11 +126,15 @@ public:
 	{
 		return m_LeftFileSize;
 	}
+// Функция возвращает размер файла, открытого в правом окне
+	LARGE_INTEGER ReturnRightFileSize() {
+		return m_RightFileSize;
+	}
 
 	DWORDLONG  m_ScrollVerticalOffset;
 	LONG m_ScrollHorizontalOffset;
 	LONG m_BytesOnString;
-
+	_int64 m_wheelOffset;
 private:
 	DWORD m_Granularity; // Гранулярность системы
 	LARGE_INTEGER m_LeftFileSize; //Размер файла открытого в левом окне
@@ -323,6 +339,8 @@ public:
 	HWND LeftTextWindow;    // Левое дочернее окно вывода
 	HWND RightTextWindow;	// Правое дочернее окно вывода
 	HWND ToolBar;			// Окно инстументов
+	HWND LeftFileSizeBar;
+	HWND RightFileSizeBar;
 
 private:
 

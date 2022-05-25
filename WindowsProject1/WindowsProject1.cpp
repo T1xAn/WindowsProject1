@@ -11,6 +11,7 @@ DWORD error;
 // Глобальные переменные:
 
  HANDLE LeftFile;
+ HANDLE RightFile;
  ScrollFileInfo ScrolledFilesInfo;
  MainWindows WindowInfo;
 
@@ -38,7 +39,7 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString) {
+BOOL GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString) {
     DWORD Block = Granularity, height = 1;
     char BufferString[256] = ""; // РАЗМЕРНОСТЬ
     OFFSET *= BytesOnString;
@@ -49,11 +50,11 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWO
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
     TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
 
-   HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);
+   HDC hdcLF = GetDC(Window);
    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
 
    RECT rc;
-   GetClientRect(WindowInfo.LeftTextWindow, &rc);
+   GetClientRect(Window, &rc);
 
    HDC BlitHDC = CreateCompatibleDC(hdcLF);
    HBITMAP BitMap = CreateCompatibleBitmap(hdcLF, rc.right, rc.bottom);
@@ -69,7 +70,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWO
    SelectObject(hdcLF, FONT);
 
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
-        PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+        PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
         error = GetLastError();
         if (Block / BytesOnString < Strings_On_Screen) Block = ceil(Block / (double)BytesOnString); else Block = Strings_On_Screen;
 
@@ -93,6 +94,14 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWO
                   }
               }
               int StrNumOffset = BufferOffset;
+
+              if (i+ OFFSET >= FileSize) {
+                  i+= BytesOnString;
+                  TextOutA(BlitHDC, 5, height, (LPCSTR)BufferString, strlen(BufferString));
+                  height += TextMetric.tmHeight;
+                  BufferString[0] = '\0';
+                  continue;
+              }
 
            for (int j = HexOffset; j < BytesOnString; j++) {
                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", LRFILE[i + j]);
@@ -130,7 +139,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWO
                Block = Granularity;
                OFFSET = (((OFFSET / Granularity) + 1) * Granularity);
                if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
-               PBYTE LRFILE = (PBYTE)MapViewOfFile(LeftFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+               PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
                i = 0;
                Block = temp;
            }
@@ -140,7 +149,7 @@ BOOL GetEightBitsHex(HANDLE LeftFile, DWORD Granularity, DWORDLONG FileSize, DWO
         UnmapViewOfFile(LRFILE);
         BitBlt(hdcLF, 0, 0, rc.right, rc.bottom, BlitHDC,0, 0 , SRCCOPY);
         DeleteDC(BlitHDC); 
-        ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);
+        ReleaseDC(Window, hdcLF);
     return true;
 }
 
@@ -217,6 +226,9 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         ShowScrollBar(WindowInfo.LeftTextWindow, SB_HORZ, FALSE);
         SetScrollRange(WindowInfo.LeftTextWindow, SB_VERT, 0, 1000, FALSE);
 
+        ShowScrollBar(WindowInfo.RightTextWindow, SB_HORZ, FALSE);
+        SetScrollRange(WindowInfo.RightTextWindow, SB_VERT, 0, 1000, FALSE);
+
         //SetScrollPos(LeftTextWindow, SB_VERT, 0, TRUE);
     }
     case WM_SIZE:
@@ -283,9 +295,21 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 //
 LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RECT rect;
     switch (message)
     {
+
+    case WM_MOUSEWHEEL: {
+            if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0) {
+                ScrolledFilesInfo.m_ScrollVerticalOffset -= 2;
+                SendMessage(WindowInfo.LeftTextWindow, WM_VSCROLL, -1L, 0L);
+            }
+            else if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) < 0) {
+                ScrolledFilesInfo.m_ScrollVerticalOffset += 2;
+                SendMessage(WindowInfo.LeftTextWindow, WM_VSCROLL, -1L, 0L);
+            }
+        break;
+    }
+    
     case WM_SIZE: {
             ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.LeftTextWindow);
             LONG HorizontalMaxScroll = ScrolledFilesInfo.HorizontalOffset();
@@ -301,7 +325,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, 0, TRUE);
                 ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
             }
-            SendNotifyMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
+            SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
         break;
     }
     case WM_VSCROLL: {
@@ -337,7 +361,12 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         if (LeftFile!= NULL && LeftFileSize.QuadPart >= Strings_On_Screen*8 )
         {
-            
+
+            if (ScrolledFilesInfo.m_ScrollVerticalOffset >= 18446744073709551614)
+            {
+                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
+            }
+
           ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset* 1000)/(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
             ScrollButtonPos = min(1000, ScrollButtonPos);
             ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
@@ -345,7 +374,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
          /*InvalidateRect(WindowInfo.LeftTextWindow,, TRUE);
             UpdateWindow(WindowInfo.LeftTextWindow);*/
-            SendNotifyMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
+            SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
             /*GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);*/
             
@@ -385,7 +414,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
            /* InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);*/
             //UpdateWindow(WindowInfo.LeftTextWindow);
             
-            SendNotifyMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
+            SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
 
             /*GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset , ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);*/
@@ -412,7 +441,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HDC hdc = BeginPaint(hWnd, &ps);
         if (LeftFile != NULL) {
             LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-            GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
+            GetEightBitsHex(WindowInfo.LeftTextWindow, LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
         }
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
@@ -500,38 +529,60 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             Edit_SetText(WindowInfo.LeftTextbox, szFile);
             break;
         }
+        case IDB_SearchButton_Right: {
+            OPENFILENAMEW File;
+            File = buttonGetFile();
+            wchar_t szFile[1000];
+            wcscpy_s(szFile, File.lpstrFile);
+            Edit_SetText(WindowInfo.RightTextbox, szFile);
+            break;
+        }
         case IDB_ReadButton: {
 
          /*   InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
             UpdateWindow(WindowInfo.LeftTextWindow);*/
             wchar_t fn1[1000];
+            wchar_t fn2[1000];
             Edit_GetText(WindowInfo.LeftTextbox, fn1, 1000);
-
+            Edit_GetText(WindowInfo.RightTextbox, fn2, 1000);
             if (LeftFile != NULL) CloseHandle(LeftFile);
+            if (RightFile != NULL) CloseHandle(LeftFile);
             /*HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);*/
 
             HANDLE LeftFile_a = CreateFile(fn1, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-            if (LeftFile_a == (HANDLE)0xffffffffffffffff) {
+            HANDLE RightFile_a = CreateFile(fn2, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+            if (LeftFile_a == (HANDLE)0xffffffffffffffff && RightFile_a == (HANDLE)0xffffffffffffffff) {
                 MessageBox(NULL, L"Exorcizo te, immundissime spiritus, omnis incursio adversarii, omne phantasma, omnis legio, in nomine Domini nostri Jesu Christi eradicare, et effugare ab hoc plasmate Dei. Ipse tibi imperat, qui te de supernis caelorum in inferiora terrae demergi praecepit. Ipse tibi imperat, qui mari, ventis, et tempestatibus impersvit. Audi ergo, et time, satana, inimice fidei, hostis generis humani, mortis adductor, vitae raptor, justitiae declinator, malorum radix, fomes vitiorum, seductor hominum, proditor gentium, incitator invidiae, origo avaritiae, causa discordiae, excitator dolorum: quid stas, et resistis, cum scias. Christum Dominum vias tuas perdere? Illum metue, qui in Isaac immolatus est, in joseph venumdatus, in sgno occisus, in homine cruci- fixus, deinde inferni triumphator fuit. Sequentes cruces fiant in fronte obsessi. Recede ergo in nomine Patris et Filii, et Spiritus Sancti: da locum Spiritui Sancto, per hoc signum sanctae Cruci Jesu Christi Domini nostri: Qui cum Patre et eodem Spiritu Sancto vivit et regnat Deus, Per omnia saecula saeculorum. Et cum spiritu tuo. Amen.",
                     L"Произошла ошибка при открытии файла:", MB_OK);
                 /*ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);*/
                 CloseHandle(LeftFile_a);
+                CloseHandle(RightFile_a);
                 //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
                 break;
             }
 
+            SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, 0, TRUE);
+            SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, 0, TRUE);
+            SetScrollPos(WindowInfo.RightTextWindow, SB_VERT, 0, TRUE);
+            SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, 0, TRUE);
+            ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
             ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
             ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
-            LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+            ScrolledFilesInfo.GetRightFileSize(RightFile_a);
+           // LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
             
             LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-            if (LeftFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
+            RightFile = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+            if (LeftFile == NULL && RightFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
             SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
+            SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
            // GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart, 0, 0, ScrolledFilesInfo.m_BytesOnString);
 
            /* ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);*/
 
             CloseHandle(LeftFile_a);
+            CloseHandle(RightFile_a);
 
             break;
         }
@@ -593,97 +644,130 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RECT rect;
     switch (message)
     {
+    case WM_MOUSEWHEEL: {
+        if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0) {
+            ScrolledFilesInfo.m_ScrollVerticalOffset -= 2;
+            SendMessage(WindowInfo.RightTextWindow, WM_VSCROLL, -1L, 0L);
+        }
+        else if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) < 0) {
+            ScrolledFilesInfo.m_ScrollVerticalOffset += 2;
+            SendMessage(WindowInfo.RightTextWindow, WM_VSCROLL, -1L, 0L);
+        }
+        break;
+    }
     case WM_SIZE: {
-       // ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.LeftTextWindow);
+        ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.RightTextWindow);
+        LONG HorizontalMaxScroll = ScrolledFilesInfo.HorizontalOffset();
+        if (HorizontalMaxScroll != 0)
+        {
+            SetScrollRange(WindowInfo.RightTextWindow, SB_HORZ, 0, HorizontalMaxScroll, TRUE);
+            ShowScrollBar(WindowInfo.RightTextWindow, SB_HORZ, TRUE);
+            SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, 0, TRUE);
+
+        }
+        else {
+            ShowScrollBar(WindowInfo.RightTextWindow, SB_HORZ, FALSE);
+            SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, 0, TRUE);
+            ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
+        }
+        SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
         break;
     }
     case WM_VSCROLL: {
-    //    DWORDLONG ScrollButtonPos = 0;
-    //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-    //    int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+        DWORDLONG ScrollButtonPos = 0;
+        LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
+        int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
 
-    //    switch (LOWORD(wParam)) {
+        switch (LOWORD(wParam)) {
 
-    //    case SB_LINEUP:
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset -= 1;
-    //        break;
-    //    case SB_LINEDOWN:
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset += 1;
-    //        break;
-    //    case SB_PAGEDOWN:
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset += Strings_On_Screen;
-    //        break;
-    //    case SB_PAGEUP:
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset -= Strings_On_Screen;
-    //        break;
-    //        /* case SB_THUMBPOSITION:
-    //             ScrollButtonPos = HIWORD(wParam);
-    //             ScrolledFilesInfo.ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
-    //             break;*/
-    //    case SB_THUMBTRACK:
-    //        ScrollButtonPos = HIWORD(wParam);
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
-    //        break;
-    //    default:
-    //        return 0;
-    //    }
+        case SB_LINEUP:
+            ScrolledFilesInfo.m_ScrollVerticalOffset -= 1;
+            break;
+        case SB_LINEDOWN:
+            ScrolledFilesInfo.m_ScrollVerticalOffset += 1;
+            break;
+        case SB_PAGEDOWN:
+            ScrolledFilesInfo.m_ScrollVerticalOffset += Strings_On_Screen;
+            break;
+        case SB_PAGEUP:
+            ScrolledFilesInfo.m_ScrollVerticalOffset -= Strings_On_Screen;
+            break;
+            /* case SB_THUMBPOSITION:
+                 ScrollButtonPos = HIWORD(wParam);
+                 ScrolledFilesInfo.ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+                 break;*/
+        case SB_THUMBTRACK:
+            ScrollButtonPos = HIWORD(wParam);
+            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(RightFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+            break;
+        default:
+            break;
+        }
 
-    //    if (LeftFile != NULL && LeftFileSize.LowPart >= Strings_On_Screen * 8)
-    //    {
+        if (RightFile != NULL && RightFileSize.QuadPart >= Strings_On_Screen * 8)
+        {
 
-    //        ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset * 1000) / (ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen)));
-    //        ScrollButtonPos = min(1000, ScrollButtonPos);
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset = min(ceil(LeftFileSize.LowPart / (double)MAX_BYTESONSTRING) - Strings_On_Screen, ScrolledFilesInfo.m_ScrollVerticalOffset);
-    //        ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, ScrolledFilesInfo.m_ScrollVerticalOffset);
-    //        SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
-    //        InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
-    //        UpdateWindow(WindowInfo.LeftTextWindow);
+            if (ScrolledFilesInfo.m_ScrollVerticalOffset >= 18446744073709551614)
+            {
+                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
+            }
 
-    //        GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
-    //            ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+            ScrollButtonPos = ceil(((ScrolledFilesInfo.m_ScrollVerticalOffset * 1000) / (ceil(RightFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
+            ScrollButtonPos = min(1000, ScrollButtonPos);
+            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(RightFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
+                ScrolledFilesInfo.m_ScrollVerticalOffset)));
+            SetScrollPos(WindowInfo.RightTextWindow, SB_VERT, ScrollButtonPos, TRUE);
+            /*InvalidateRect(WindowInfo.LeftTextWindow,, TRUE);
+               UpdateWindow(WindowInfo.LeftTextWindow);*/
+            SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
+            /*GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);*/
 
-    //    }
-    //    break;
-    //}
-    //case WM_HSCROLL: {
-    //    DWORDLONG ScrollHorizontalButtonPos = 0;
-    //    LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-    //    LONG CharOnString = ScrolledFilesInfo.ReturnCharsOnScreen();
-    //    switch (LOWORD(wParam)) {
+        }
+        break;
+    }
+    case WM_HSCROLL: {
+        DWORDLONG ScrollHorizontalButtonPos = 0;
+        LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
+        LONG CharOnString = ScrolledFilesInfo.ReturnCharsOnScreen();
+        switch (LOWORD(wParam)) {
 
-    //    case SB_LINELEFT:
-    //        ScrolledFilesInfo.m_ScrollHorizontalOffset -= 1;
-    //        break;
-    //    case SB_LINERIGHT:
-    //        ScrolledFilesInfo.m_ScrollHorizontalOffset += 1;
-    //        break;
-    //    case SB_THUMBTRACK:
-    //        ScrollHorizontalButtonPos = HIWORD(wParam);
-    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = ScrollHorizontalButtonPos;
-    //        break;
-    //    default:
-    //        return 0;
-    //    }
+        case SB_LINELEFT:
+            ScrolledFilesInfo.m_ScrollHorizontalOffset -= 1;
+            break;
+        case SB_LINERIGHT:
+            ScrolledFilesInfo.m_ScrollHorizontalOffset += 1;
+            break;
+        case SB_THUMBTRACK:
+            ScrollHorizontalButtonPos = HIWORD(wParam);
+            ScrolledFilesInfo.m_ScrollHorizontalOffset = ScrollHorizontalButtonPos;
+            break;
+        default:
+            return 0;
+        }
 
-    //    if (LeftFile != NULL /*&& LeftFileSize.LowPart >= Strings_On_Screen * 8*/)
-    //    {
-    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = min(50, ScrolledFilesInfo.m_ScrollHorizontalOffset);
-    //        ScrolledFilesInfo.m_ScrollHorizontalOffset = max(0, ScrolledFilesInfo.m_ScrollHorizontalOffset);
-    //        ScrollHorizontalButtonPos = ScrolledFilesInfo.m_ScrollHorizontalOffset;
-    //        ScrollHorizontalButtonPos = min(50, ScrollHorizontalButtonPos);
+        if (RightFile != NULL /*&& LeftFileSize.LowPart >= Strings_On_Screen * 8*/)
+        {
+            int MaxRange = 0, MinRange = 0;
+            GetScrollRange(WindowInfo.LeftTextWindow, SB_HORZ, &MinRange, &MaxRange);
+            ScrolledFilesInfo.m_ScrollHorizontalOffset = min(MaxRange, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+            ScrolledFilesInfo.m_ScrollHorizontalOffset = max(MinRange, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+            ScrollHorizontalButtonPos = ScrolledFilesInfo.m_ScrollHorizontalOffset;
+            ScrollHorizontalButtonPos = min(50, ScrollHorizontalButtonPos);
 
-    //        SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
-    //        InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
-    //        UpdateWindow(WindowInfo.LeftTextWindow);
+            SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
+            /* InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);*/
+             //UpdateWindow(WindowInfo.LeftTextWindow);
 
-    //        GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.LowPart,
-    //            ScrolledFilesInfo.m_ScrollVerticalOffset * MAX_BYTESONSTRING, ScrolledFilesInfo.m_ScrollHorizontalOffset);
+            SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
 
-    //    }
-    //    break;
+            /*GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset , ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);*/
+
+        }
+        break;
 
     }
     case WM_COMMAND:
@@ -702,6 +786,11 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
+        if (RightFile != NULL) {
+            LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
+            GetEightBitsHex(WindowInfo.RightTextWindow,RightFile, ScrolledFilesInfo.ReturnGranularity(), RightFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
+        }
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);
     }
