@@ -53,6 +53,10 @@ public:
 
 		return true;
 	}
+	
+	LONGLONG ReturnBiggestFile() {
+		return (max(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
+	}
 
 	BOOL GetTextMetric(HWND Window, HFONT FONT) {
 		HDC hdc = GetDC(Window);
@@ -130,7 +134,7 @@ public:
 	LARGE_INTEGER ReturnRightFileSize() {
 		return m_RightFileSize;
 	}
-
+	
 	DWORDLONG  m_ScrollVerticalOffset;
 	LONG m_ScrollHorizontalOffset;
 	LONG m_BytesOnString;
@@ -327,6 +331,7 @@ public:
 		return rtWindowClass;
 	}
 
+	HWND m_UpdatingWindows[2];
 	HINSTANCE hInst;
 	HWND ChangeBytesNumButton;
 	HWND LeftSearch;
