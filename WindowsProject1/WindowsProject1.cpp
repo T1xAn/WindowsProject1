@@ -39,7 +39,7 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-BOOL GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString) {
+HDC GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString, HDC BlitHDC) {
     DWORD Block = Granularity, height = 1;
     char BufferString[256] = ""; // РАЗМЕРНОСТЬ
     OFFSET *= BytesOnString;
@@ -50,31 +50,32 @@ BOOL GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG File
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
     TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
 
-   HDC hdcLF = GetDC(Window);
+  // HDC hdcLF = GetDC(Window);
    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
 
-   RECT rc;
-   GetClientRect(Window, &rc);
+  /* RECT rc;
+   GetClientRect(Window, &rc);*/
 
-   HDC BlitHDC = CreateCompatibleDC(hdcLF);
+ /*  HDC BlitHDC = CreateCompatibleDC(hdcLF);
    HBITMAP BitMap = CreateCompatibleBitmap(hdcLF, rc.right, rc.bottom);
-   SelectObject(BlitHDC, BitMap);
+   SelectObject(BlitHDC, BitMap);*/
    SelectObject(BlitHDC, FONT);
-   DeleteObject(BitMap);
-   BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
+ /*  DeleteObject(BitMap);*/
+
+ /*  BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);*/
 
     OFFSET *= Granularity;
     DWORD HighOffset = ((OFFSET >> 32) & 0xFFFFFFFFul);
     DWORD LowOffset = static_cast<DWORD>(OFFSET & 0xFFFFFFFFul);
 
-   SelectObject(hdcLF, FONT);
+   //SelectObject(hdcLF, FONT);
 
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
-        error = GetLastError();
+       
         if (Block / BytesOnString < Strings_On_Screen) Block = ceil(Block / (double)BytesOnString); else Block = Strings_On_Screen;
 
-          int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", FileSize);
+          int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ScrolledFilesInfo.ReturnBiggestFile());
          
          
           int HexOffset = 0;
@@ -147,6 +148,8 @@ BOOL GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG File
                int temp = Block;
                Block = Granularity;
                OFFSET = (((OFFSET / Granularity) + 1) * Granularity);
+               DWORD HighOffset = ((OFFSET >> 32) & 0xFFFFFFFFul);
+               DWORD LowOffset = static_cast<DWORD>(OFFSET & 0xFFFFFFFFul);
                if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
                PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
                i = 0;
@@ -156,11 +159,105 @@ BOOL GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG File
            }
          
         UnmapViewOfFile(LRFILE);
-        BitBlt(hdcLF, 0, 0, rc.right, rc.bottom, BlitHDC,0, 0 , SRCCOPY);
-        DeleteDC(BlitHDC); 
-        ReleaseDC(Window, hdcLF);
-    return true;
+       /* BitBlt(hdcLF, 0, 0, rc.right, rc.bottom, BlitHDC,0, 0 , SRCCOPY);
+        DeleteDC(BlitHDC); */
+        //ReleaseDC(Window, hdcLF);
+    return BlitHDC;
 }
+
+HDC CompareTwoFiles(HANDLE WindowFile, DWORDLONG WindowFileSize, HANDLE ComparableFile, DWORDLONG ComparableFileSize, HDC DrawDC,
+    DWORDLONG Offset, LONG HorizontalOffset, LONG BytesOnString, DWORD Granularity) {
+
+    DWORD Block = Granularity, height = 1;
+    char BufferString[50] = "";
+    Offset *= BytesOnString;
+
+    DWORDLONG i = Offset;
+    
+    //LONGLONG a = ScrolledFilesInfo.ReturnSmallestFile();
+    if (ScrolledFilesInfo.ReturnSmallestFile() <= Offset) return DrawDC;
+
+Offset = (Offset / Granularity);
+    int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+    TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
+    int SingleChar = TextMetric.tmAveCharWidth;
+
+    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+    SetTextColor(DrawDC, RGB(255, 0, 0));
+    Offset *= Granularity;
+    DWORD HighOffset = ((Offset >> 32) & 0xFFFFFFFFul);
+    DWORD LowOffset = static_cast<DWORD>(Offset & 0xFFFFFFFFul);
+
+    /*   LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+       LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();*/
+
+    if (Block > WindowFileSize - Offset) Block = WindowFileSize - Offset;
+    PBYTE WINDOWRFILE = (PBYTE)MapViewOfFile(WindowFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+
+    if (Block > ComparableFileSize - Offset) Block = ComparableFileSize - Offset;
+    PBYTE COMPARABLERFILE = (PBYTE)MapViewOfFile(ComparableFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+
+    int HorizontalOffsetMain = HorizontalOffset;
+
+    int StrNumOffset = snprintf(BufferString, sizeof(BufferString), "%llX :", ScrolledFilesInfo.ReturnBiggestFile());
+    BufferString[0] = '\0';
+
+    int HexOffset = 0, CharOffset = 0, PreCharOffset = 2 * TextMetric.tmAveCharWidth;
+    if (HorizontalOffset > StrNumOffset) {
+        HorizontalOffsetMain = HorizontalOffsetMain - StrNumOffset;
+
+        if (HorizontalOffsetMain > BytesOnString ) {
+            CharOffset = HorizontalOffsetMain - BytesOnString;
+            HexOffset = BytesOnString;
+            PreCharOffset = 0;
+            HorizontalOffsetMain = 0;
+        }
+        else
+            HexOffset = HorizontalOffsetMain;
+        HorizontalOffsetMain = 0;
+    }
+    else HorizontalOffsetMain = StrNumOffset - HorizontalOffset;
+    i -= Offset;
+    for (int count = 0; count < Strings_On_Screen; count++) {
+        for (int HexCount = HexOffset; HexCount < BytesOnString; HexCount++) {
+            if (WINDOWRFILE[i + HexCount] == COMPARABLERFILE[i + HexCount]) {
+                snprintf(BufferString, sizeof(BufferString), " %02X", WINDOWRFILE[i + HexCount]);
+                TextOutA(DrawDC, 5 + 3 * SingleChar * (HexCount - HexOffset) + HorizontalOffsetMain* SingleChar, height, BufferString, strlen(BufferString));
+            }
+        }
+            BufferString[0] = '\0';
+            for (int CharCount = CharOffset; CharCount < BytesOnString; CharCount++) {
+                if (WINDOWRFILE[i + CharCount] == COMPARABLERFILE[i + CharCount]) {
+                    snprintf(BufferString, sizeof(BufferString), " %C", WINDOWRFILE[i + CharCount]);
+                    TextOutA(DrawDC, 5 +5 + 2 * SingleChar * (CharCount - CharOffset) + HorizontalOffsetMain* SingleChar + PreCharOffset + 3 * SingleChar * (BytesOnString - HexOffset), height, BufferString, strlen(BufferString));
+                }
+
+            }
+            i += BytesOnString;
+            height += TextMetric.tmHeight;
+            if (i == Granularity) {
+                UnmapViewOfFile(WINDOWRFILE);
+                UnmapViewOfFile(COMPARABLERFILE);
+                int temp = Block;
+                Block = Granularity;
+                Offset = (((Offset / Granularity) + 1) * Granularity);
+                DWORD HighOffset = ((Offset >> 32) & 0xFFFFFFFFul);
+                DWORD LowOffset = static_cast<DWORD>(Offset & 0xFFFFFFFFul);
+                if (Block > WindowFileSize - Offset) Block = WindowFileSize - Offset;
+                PBYTE WINDOWRFILE = (PBYTE)MapViewOfFile(WindowFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+
+                Block = Granularity;
+                if (Block > ComparableFileSize - Offset) Block = ComparableFileSize - Offset;
+                PBYTE COMPARABLERFILE = (PBYTE)MapViewOfFile(ComparableFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+                i = 0;
+                Block = temp;
+                height += TextMetric.tmHeight;
+                if (ScrolledFilesInfo.ReturnSmallestFile() <= Offset) return DrawDC;
+            }
+
+        }
+        return DrawDC;
+ }
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -469,9 +566,27 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         if (LeftFile != NULL) {
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            hdc = GetDC(WindowInfo.LeftTextWindow);
+            HDC BlitHDC = CreateCompatibleDC(hdc);
+            HBITMAP BitMap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            SelectObject(BlitHDC, BitMap);
+            
+            DeleteObject(BitMap);
+            BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
+
             LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-            GetEightBitsHex(WindowInfo.LeftTextWindow, LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
-                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
+            BlitHDC = GetEightBitsHex(WindowInfo.LeftTextWindow, LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);
+            if (RightFile != NULL) {
+                LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
+                BlitHDC = CompareTwoFiles(LeftFile, LeftFileSize.QuadPart, RightFile, RightFileSize.QuadPart, BlitHDC, ScrolledFilesInfo.m_ScrollVerticalOffset,
+                    ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, ScrolledFilesInfo.ReturnGranularity());
+            }
+
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, SRCCOPY);
+            DeleteDC(BlitHDC);
         }
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);
@@ -835,9 +950,27 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         if (RightFile != NULL) {
-            LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
-            GetEightBitsHex(WindowInfo.RightTextWindow,RightFile, ScrolledFilesInfo.ReturnGranularity(), RightFileSize.QuadPart,
-                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString);
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            hdc = GetDC(WindowInfo.RightTextWindow);
+            HDC BlitHDC = CreateCompatibleDC(hdc);
+            HBITMAP BitMap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            SelectObject(BlitHDC, BitMap);
+
+            DeleteObject(BitMap);
+            BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
+
+              LARGE_INTEGER RightFileSize = ScrolledFilesInfo.ReturnRightFileSize();
+            BlitHDC = GetEightBitsHex(WindowInfo.RightTextWindow, RightFile, ScrolledFilesInfo.ReturnGranularity(), RightFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);
+            if (LeftFile != NULL) {
+              LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
+                BlitHDC = CompareTwoFiles(RightFile,RightFileSize.QuadPart , LeftFile, LeftFileSize.QuadPart, BlitHDC, ScrolledFilesInfo.m_ScrollVerticalOffset,
+                    ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, ScrolledFilesInfo.ReturnGranularity());
+            }
+
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, SRCCOPY);
+            DeleteDC(BlitHDC);
         }
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);

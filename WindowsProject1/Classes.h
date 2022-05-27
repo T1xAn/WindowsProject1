@@ -58,6 +58,10 @@ public:
 		return (max(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
 	}
 
+	LONGLONG ReturnSmallestFile() {
+		return (min(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
+	}
+
 	BOOL GetTextMetric(HWND Window, HFONT FONT) {
 		HDC hdc = GetDC(Window);
 		SelectObject(hdc, FONT);
