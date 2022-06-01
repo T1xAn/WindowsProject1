@@ -413,8 +413,12 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
 
     case WM_MOUSEWHEEL: {
-            if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0) 
+        if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0){
+            if (ScrolledFilesInfo.m_ScrollVerticalOffset <= 5) 
+                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
+            else
                 ScrolledFilesInfo.m_ScrollVerticalOffset -= 5;
+            }
             else 
                 ScrolledFilesInfo.m_ScrollVerticalOffset += 5;
 
@@ -440,9 +444,9 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SetScrollPos(WindowInfo.LeftTextWindow, SB_HORZ, 0, TRUE);
                 ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
             }
-            for (int i = 0; i < 2; i++) {
-                SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
-            }
+            //for (int i = 0; i < 2; i++) {
+            //    //SendMessage(WindowInfo.LeftTextWindow, WM_PAINT, 0, 0);
+            //}
         break;
     }
     case WM_VSCROLL: {
@@ -453,6 +457,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (LOWORD(wParam)) {
             
         case SB_LINEUP:
+            if(ScrolledFilesInfo.m_ScrollVerticalOffset!=0)
             ScrolledFilesInfo.m_ScrollVerticalOffset -= 1;
             break;
         case SB_LINEDOWN:
@@ -480,10 +485,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (LeftFile!= NULL)
         {
 
-            if (ScrolledFilesInfo.m_ScrollVerticalOffset >= 18446744073709551614)
-            {
-                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
-            }
+     
 
             if(wParam != -1)
                 SendNotifyMessage(WindowInfo.RightTextWindow, WM_VSCROLL, -1L, -1L);
@@ -525,6 +527,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         if (LeftFile != NULL /*&& LeftFileSize.LowPart >= Strings_On_Screen * 8*/)
         {
+   
 
             if (wParam != -1)
                 SendNotifyMessage(WindowInfo.RightTextWindow, WM_HSCROLL, -1L, -1L);
@@ -691,19 +694,33 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             if (RightFile != NULL) CloseHandle(RightFile);
             /*HDC hdcLF = GetDC(WindowInfo.LeftTextWindow);*/
-
+            EnableScrollBar(WindowInfo.LeftTextWindow, SB_VERT, ESB_ENABLE_BOTH);
+            EnableScrollBar(WindowInfo.RightTextWindow, SB_VERT, ESB_ENABLE_BOTH);
             HANDLE LeftFile_a = CreateFile(FirstFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-            HANDLE RightFile_a = CreateFile(SecondFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-            if (LeftFile_a == (HANDLE)0xffffffffffffffff && RightFile_a == (HANDLE)0xffffffffffffffff) {
-                MessageBox(NULL, L"Exorcizo te, immundissime spiritus, omnis incursio adversarii, omne phantasma, omnis legio, in nomine Domini nostri Jesu Christi eradicare, et effugare ab hoc plasmate Dei. Ipse tibi imperat, qui te de supernis caelorum in inferiora terrae demergi praecepit. Ipse tibi imperat, qui mari, ventis, et tempestatibus impersvit. Audi ergo, et time, satana, inimice fidei, hostis generis humani, mortis adductor, vitae raptor, justitiae declinator, malorum radix, fomes vitiorum, seductor hominum, proditor gentium, incitator invidiae, origo avaritiae, causa discordiae, excitator dolorum: quid stas, et resistis, cum scias. Christum Dominum vias tuas perdere? Illum metue, qui in Isaac immolatus est, in joseph venumdatus, in sgno occisus, in homine cruci- fixus, deinde inferni triumphator fuit. Sequentes cruces fiant in fronte obsessi. Recede ergo in nomine Patris et Filii, et Spiritus Sancti: da locum Spiritui Sancto, per hoc signum sanctae Cruci Jesu Christi Domini nostri: Qui cum Patre et eodem Spiritu Sancto vivit et regnat Deus, Per omnia saecula saeculorum. Et cum spiritu tuo. Amen.",
-                    L"Произошла ошибка при открытии файла:", MB_OK);
-                /*ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);*/
+            if (GetLastError() != 0) {
+                MessageBox(WindowInfo.ToolBar, L" Левый файл не был открыт",
+                    L"Произошла ошибка при открытии файла:", MB_OK | MB_ICONEXCLAMATION);
                 CloseHandle(LeftFile_a);
-                CloseHandle(RightFile_a);
-                //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
-                break;
+                EnableScrollBar(WindowInfo.LeftTextWindow, SB_VERT, ESB_DISABLE_BOTH);
             }
+            HANDLE RightFile_a = CreateFile(SecondFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            if (GetLastError() != 0) {
+                MessageBox(WindowInfo.ToolBar, L" Правый файл не был открыт",
+                    L"Произошла ошибка при открытии файла:", MB_OK  | MB_ICONEXCLAMATION);
+                CloseHandle(RightFile_a);
+                EnableScrollBar(WindowInfo.RightTextWindow, SB_VERT, ESB_DISABLE_BOTH);
+            
+            }
+
+            //if (LeftFile_a == (HANDLE)0xffffffffffffffff || RightFile_a == (HANDLE)0xffffffffffffffff) {
+            //    MessageBox(NULL, L"Exorcizo te, immundissime spiritus, omnis incursio adversarii, omne phantasma, omnis legio, in nomine Domini nostri Jesu Christi eradicare, et effugare ab hoc plasmate Dei. Ipse tibi imperat, qui te de supernis caelorum in inferiora terrae demergi praecepit. Ipse tibi imperat, qui mari, ventis, et tempestatibus impersvit. Audi ergo, et time, satana, inimice fidei, hostis generis humani, mortis adductor, vitae raptor, justitiae declinator, malorum radix, fomes vitiorum, seductor hominum, proditor gentium, incitator invidiae, origo avaritiae, causa discordiae, excitator dolorum: quid stas, et resistis, cum scias. Christum Dominum vias tuas perdere? Illum metue, qui in Isaac immolatus est, in joseph venumdatus, in sgno occisus, in homine cruci- fixus, deinde inferni triumphator fuit. Sequentes cruces fiant in fronte obsessi. Recede ergo in nomine Patris et Filii, et Spiritus Sancti: da locum Spiritui Sancto, per hoc signum sanctae Cruci Jesu Christi Domini nostri: Qui cum Patre et eodem Spiritu Sancto vivit et regnat Deus, Per omnia saecula saeculorum. Et cum spiritu tuo. Amen.",
+            //        L"Произошла ошибка при открытии файла:", MB_OK);
+            //    /*ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);*/
+            //    CloseHandle(LeftFile_a);
+            //    CloseHandle(RightFile_a);
+            //    //ShellExecute(hWnd, L"open", L"https://sun3.tele2-nn.userapi.com/s/v1/ig2/exhJclZCmFUi4sWoYy0VYeJ2giBulR_5z4o0zfF-5E12Ib2lQZp_v3yK3tDxdJ7qj-zJBj-Q4r_DM5vHJ__l5lmV.jpg?size=1457x1600&quality=96&type=album", NULL, NULL, SW_SHOWDEFAULT); 
+            //    break;
+            //}
            
     /*        SetScrollPos(WindowInfo.RightTextWindow, SB_VERT, 0, TRUE);
             SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, 0, TRUE);*/
@@ -716,9 +733,18 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
            // LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
             
             LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+            if (GetLastError() != 0) {
+                CloseHandle(LeftFile);
+                InvalidateRect(WindowInfo.LeftTextWindow, NULL, TRUE);
+                UpdateWindow(WindowInfo.LeftTextWindow);
+            }
             RightFile = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
-
-            if (LeftFile == NULL && RightFile == NULL) { MessageBox(NULL, L"", L"Произошла ошибка при открытии файла:", MB_OK);  break; }
+            if (GetLastError() != 0) {
+                CloseHandle(RightFile);
+                InvalidateRect(WindowInfo.RightTextWindow, NULL, TRUE);
+                UpdateWindow(WindowInfo.RightTextWindow);
+            }
+            if (LeftFile == NULL && RightFile == NULL) { MessageBox(WindowInfo.ToolBar, L"Оба файла не были открыты", L" Ошибка ", MB_OK| MB_ICONERROR);  break; }
 
             for (int i = 0; i < 2; i++) {
             SetScrollPos(WindowInfo.m_UpdatingWindows[i], SB_VERT, 0, TRUE);
@@ -805,8 +831,12 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
     switch (message)
     {
     case WM_MOUSEWHEEL: {
-        if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0)
+        if (int Wheel = GET_WHEEL_DELTA_WPARAM(wParam) > 0) {
+            if (ScrolledFilesInfo.m_ScrollVerticalOffset <= 5)
+                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
+            else
             ScrolledFilesInfo.m_ScrollVerticalOffset -= 5;
+        }
         else
             ScrolledFilesInfo.m_ScrollVerticalOffset += 5;
 
@@ -830,7 +860,7 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             SetScrollPos(WindowInfo.RightTextWindow, SB_HORZ, 0, TRUE);
             ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
         }
-        SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
+        //SendMessage(WindowInfo.RightTextWindow, WM_PAINT, 0, 0);
         break;
     }
     case WM_VSCROLL: {
@@ -841,6 +871,7 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         switch (LOWORD(wParam)) {
 
         case SB_LINEUP:
+            if (ScrolledFilesInfo.m_ScrollVerticalOffset != 0)
             ScrolledFilesInfo.m_ScrollVerticalOffset -= 1;
             break;
         case SB_LINEDOWN:
@@ -867,10 +898,7 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         if (RightFile != NULL)
         {
 
-            if (ScrolledFilesInfo.m_ScrollVerticalOffset >= 18446744073709551614)
-            {
-                ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
-            }
+          
 
             if (wParam != -1)
                 SendNotifyMessage(WindowInfo.LeftTextWindow, WM_VSCROLL, -1L, -1L);
