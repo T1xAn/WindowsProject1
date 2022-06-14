@@ -32,7 +32,7 @@ public:
 		return true;
 	}
 
-	BOOL GetLeftFileSize(HANDLE LeftFile) 
+	BOOL GetLeftFileSize(_In_ HANDLE LeftFile)
 	{
 		m_LeftFileSize.QuadPart = 0;
 		GetFileSizeEx(LeftFile, &m_LeftFileSize);
@@ -43,7 +43,7 @@ public:
 		return true;
 	}
 
-	BOOL GetRightFileSize(HANDLE RightFile)
+	BOOL GetRightFileSize(_In_ HANDLE RightFile)
 	{
 		m_RightFileSize.QuadPart = 0;
 		GetFileSizeEx(RightFile, &m_RightFileSize);
@@ -62,7 +62,7 @@ public:
 		return (min(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
 	}
 
-	BOOL GetTextMetric(HWND Window, HFONT FONT) {
+	BOOL GetTextMetric(_In_ HWND Window, _In_ HFONT FONT) {
 		HDC hdc = GetDC(Window);
 		SelectObject(hdc, FONT);
 		//int indexHDC = SaveDC(hdc);
@@ -74,7 +74,7 @@ public:
 	}
 
 	// Расчёт максимально возможного количества строк на экране и символов в строке
-	BOOL GetNumStringsAndCharOnScreen(HWND Window) {
+	BOOL GetNumStringsAndCharOnScreen(_In_ HWND Window) {
 		RECT rt;
 		GetClientRect(Window, &rt);
 
@@ -90,8 +90,8 @@ public:
 	// Подсчёт ограничителей для горизонтальной полосы прокрутки
 	LONG HorizontalOffset() {
 		char BufferString[100];
-		if (m_LeftFileSize.QuadPart != 0) {
-			int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX" /*PRIX64*/, m_LeftFileSize.QuadPart);
+		if (ReturnBiggestFile() != 0 ) {
+			int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX" /*PRIX64*/, ReturnBiggestFile());
 			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
 			int ReturnScroll = 0;
 			if (OutString > m_CharOnScreen) {
@@ -165,7 +165,7 @@ public:
 	~MainWindows(){}
 
 	// Инициализация глобальных строк
-	void RegisterStrings(HINSTANCE hInstance) {
+	void RegisterStrings(_In_ HINSTANCE hInstance) {
 		LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 		LoadStringW(hInstance, IDC_WINDOWSPROJECT1, szWindowClass, MAX_LOADSTRING);
 
@@ -178,7 +178,7 @@ public:
 	}
 
 	// Регестрация класса главного окна
-	ATOM MainWindowClass(HINSTANCE hInstance) {
+	ATOM MainWindowClass(_In_ HINSTANCE hInstance) {
 		WNDCLASSEXW wcex;
 
 		wcex.cbSize = sizeof(WNDCLASSEX);
@@ -199,7 +199,7 @@ public:
 	}
 
 	// Регистрация класса для левого окна вывода
-	ATOM LeftWindowClass(HINSTANCE hInstance) {
+	ATOM LeftWindowClass(_In_ HINSTANCE hInstance) {
 		WNDCLASSEXW wcex1;
 
 		wcex1.cbSize = sizeof(WNDCLASSEX);
@@ -220,7 +220,7 @@ public:
 	}
 
 	// Регистрация класса для окна инструментов
-	ATOM ToolBarWindowClass(HINSTANCE hInstance) {
+	ATOM ToolBarWindowClass(_In_ HINSTANCE hInstance) {
 		WNDCLASSEXW wcex1;
 
 		wcex1.cbSize = sizeof(WNDCLASSEX);
@@ -242,7 +242,7 @@ public:
 	}
 
 	// Регистрация класса правого окна вывода
-	ATOM RightWindowClass(HINSTANCE hInstance) {
+	ATOM RightWindowClass(_In_ HINSTANCE hInstance) {
 		WNDCLASSEXW wcex1;
 
 		wcex1.cbSize = sizeof(WNDCLASSEX);
@@ -264,7 +264,7 @@ public:
 	}
 
 	// Функция регистрации классов всех окон приложения
-	BOOL RegisterWindowClasses(HINSTANCE hInstance) {
+	BOOL RegisterWindowClasses(_In_ HINSTANCE hInstance) {
 		
 		if (MainWindowClass(hInstance) == 0)
 			return FALSE;
@@ -277,7 +277,7 @@ public:
 		return TRUE;
 	}
 
-	BOOL CreateAllWindow(HINSTANCE hInstance, int nCmdShow ) {
+	BOOL CreateAllWindow(_In_ HINSTANCE hInstance, _In_ int nCmdShow ) {
 		hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
 
 		HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_CLIPCHILDREN,

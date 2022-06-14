@@ -39,7 +39,19 @@ OPENFILENAMEW buttonGetFile(){
     return F;
 }
 
-HDC GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG FileSize, DWORDLONG OFFSET, LONG HorizontalOffset , LONG BytesOnString, HDC BlitHDC) {
+BOOL SetVerticalScrollRange() {
+    int;
+    LONGLONG b = ScrolledFilesInfo.ReturnBiggestFile() /8 ;
+    for(int i =0; i<2; i++)
+    b = b / 1024;
+    int a = log10(b);
+
+    a = pow(10, a - 1);
+
+        return true;
+}
+HDC GetEightBitsHex( _In_ HWND Window , _In_ HANDLE File, _In_ DWORD Granularity, _In_ DWORDLONG FileSize, _In_ DWORDLONG OFFSET, 
+    _In_ LONG HorizontalOffset , _In_ LONG BytesOnString, _Inout_ HDC BlitHDC) {
     DWORD Block = Granularity, height = 1;
     char BufferString[256] = ""; // РАЗМЕРНОСТЬ
     OFFSET *= BytesOnString;
@@ -165,8 +177,8 @@ HDC GetEightBitsHex(HWND Window ,HANDLE File, DWORD Granularity, DWORDLONG FileS
     return BlitHDC;
 }
 
-HDC CompareTwoFiles(HANDLE WindowFile, DWORDLONG WindowFileSize, HANDLE ComparableFile, DWORDLONG ComparableFileSize, HDC DrawDC,
-    DWORDLONG Offset, LONG HorizontalOffset, LONG BytesOnString, DWORD Granularity) {
+HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ HANDLE ComparableFile, _In_ DWORDLONG ComparableFileSize, _Inout_ HDC DrawDC,
+    _In_ DWORDLONG Offset, _In_ LONG HorizontalOffset, _In_ LONG BytesOnString, _In_ DWORD Granularity) {
 
     DWORD Block = Granularity, height = 1;
     char BufferString[50] = "";
@@ -177,7 +189,7 @@ HDC CompareTwoFiles(HANDLE WindowFile, DWORDLONG WindowFileSize, HANDLE Comparab
     //LONGLONG a = ScrolledFilesInfo.ReturnSmallestFile();
     if (ScrolledFilesInfo.ReturnSmallestFile() <= Offset) return DrawDC;
 
-Offset = (Offset / Granularity);
+    Offset = (Offset / Granularity);
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
     TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
     int SingleChar = TextMetric.tmAveCharWidth;
@@ -615,14 +627,14 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         int sc = GetSystemMetrics(SM_CXVSCROLL);
        
         WindowInfo.LeftTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
-            WS_CHILD | WS_VISIBLE, 1, 1, ceil(rect.right/2-rect.right*0.01-sc)-5, 20, hWnd, NULL, NULL, NULL);
+            WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right/2-rect.right*0.01-sc)-5, 20, hWnd, NULL, NULL, NULL);
         WindowInfo.LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
             WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc)-4, 1, ceil(rect.right * 0.01 + sc),
             20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
         WindowInfo.ReadButton = CreateWindowA("button", "Сравнить", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);
         WindowInfo.RightTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboServer\\TurboServer.vdi"),
-            WS_CHILD | WS_VISIBLE, rect.right/2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
+            WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rect.right/2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
         WindowInfo.RightSearch = CreateWindowA("button", ">>", WS_CHILD |
             WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
             hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
@@ -702,6 +714,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     L"Произошла ошибка при открытии файла:", MB_OK | MB_ICONEXCLAMATION);
                 CloseHandle(LeftFile_a);
                 EnableScrollBar(WindowInfo.LeftTextWindow, SB_VERT, ESB_DISABLE_BOTH);
+                Edit_SetText(WindowInfo.LeftTextbox, L"");
             }
             HANDLE RightFile_a = CreateFile(SecondFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (GetLastError() != 0) {
@@ -709,9 +722,10 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     L"Произошла ошибка при открытии файла:", MB_OK  | MB_ICONEXCLAMATION);
                 CloseHandle(RightFile_a);
                 EnableScrollBar(WindowInfo.RightTextWindow, SB_VERT, ESB_DISABLE_BOTH);
-            
+                Edit_SetText(WindowInfo.RightTextbox, L"");
             }
 
+            
             //if (LeftFile_a == (HANDLE)0xffffffffffffffff || RightFile_a == (HANDLE)0xffffffffffffffff) {
             //    MessageBox(NULL, L"Exorcizo te, immundissime spiritus, omnis incursio adversarii, omne phantasma, omnis legio, in nomine Domini nostri Jesu Christi eradicare, et effugare ab hoc plasmate Dei. Ipse tibi imperat, qui te de supernis caelorum in inferiora terrae demergi praecepit. Ipse tibi imperat, qui mari, ventis, et tempestatibus impersvit. Audi ergo, et time, satana, inimice fidei, hostis generis humani, mortis adductor, vitae raptor, justitiae declinator, malorum radix, fomes vitiorum, seductor hominum, proditor gentium, incitator invidiae, origo avaritiae, causa discordiae, excitator dolorum: quid stas, et resistis, cum scias. Christum Dominum vias tuas perdere? Illum metue, qui in Isaac immolatus est, in joseph venumdatus, in sgno occisus, in homine cruci- fixus, deinde inferni triumphator fuit. Sequentes cruces fiant in fronte obsessi. Recede ergo in nomine Patris et Filii, et Spiritus Sancti: da locum Spiritui Sancto, per hoc signum sanctae Cruci Jesu Christi Domini nostri: Qui cum Patre et eodem Spiritu Sancto vivit et regnat Deus, Per omnia saecula saeculorum. Et cum spiritu tuo. Amen.",
             //        L"Произошла ошибка при открытии файла:", MB_OK);
@@ -729,6 +743,10 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
             ScrolledFilesInfo.GetRightFileSize(RightFile_a);
+            LONGLONG b = ScrolledFilesInfo.ReturnBiggestFile() / 8;
+            int a = log10(b);
+            a = pow(10, a - 1);
+            SetVerticalScrollRange();
            
            // LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
             
@@ -760,7 +778,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
            // GetEightBitsHex(LeftFile, ScrolledFilesInfo.ReturnGranularity(), LeftFileSize.QuadPart, 0, 0, ScrolledFilesInfo.m_BytesOnString);
 
            /* ReleaseDC(WindowInfo.LeftTextWindow, hdcLF);*/
-
+       
             CloseHandle(LeftFile_a);
             CloseHandle(RightFile_a);
 
@@ -772,20 +790,22 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (HIWORD(wParam) == LBN_SELCHANGE) {
 
                 int I = (int)SendMessage(WindowInfo.List, LB_GETCURSEL, 0, 0L);
+                double PrewBytesOnString = ScrolledFilesInfo.m_BytesOnString;
                 ScrolledFilesInfo.m_BytesOnString = SendMessage(WindowInfo.List, LB_GETITEMDATA, I, 0L);
+                int BytesOnfStringNumenator = max(PrewBytesOnString, ScrolledFilesInfo.m_BytesOnString);
                 LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-     /*           int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
-                ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(LeftFileSize.QuadPart / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
-                    ScrolledFilesInfo.m_ScrollVerticalOffset)));*/
+                
                 ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
+                ScrolledFilesInfo.m_ScrollVerticalOffset = floor((ScrolledFilesInfo.m_ScrollVerticalOffset * (PrewBytesOnString / ScrolledFilesInfo.m_BytesOnString)));
                 for (int i = 0; i < 2; i++) {
+                    //ScrolledFilesInfo.m_ScrollVerticalOffset = ScrolledFilesInfo.m_ScrollVerticalOffset / ((float)ScrolledFilesInfo.m_BytesOnString / PrewBytesOnString);
                     SendNotifyMessage(WindowInfo.m_UpdatingWindows[i], WM_VSCROLL, LOWORD(-1), NULL);
                     ShowScrollBar(WindowInfo.m_UpdatingWindows[i], SB_HORZ, FALSE);
                 }
                 LONG HorizontalMaxScroll = ScrolledFilesInfo.HorizontalOffset();
-
                 if (HorizontalMaxScroll != 0)
                 {
+                    
                     for (int i = 0; i < 2; i++) {
                         SetScrollRange(WindowInfo.m_UpdatingWindows[i], SB_HORZ, 0, HorizontalMaxScroll, TRUE);
                         ShowScrollBar(WindowInfo.m_UpdatingWindows[i], SB_HORZ, TRUE);

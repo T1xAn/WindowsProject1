@@ -25,4 +25,5 @@
 #include "Classes.h"
 #include <queue>
 #include <algorithm>
+#include <sal.h>
 
