@@ -40,15 +40,28 @@ OPENFILENAMEW buttonGetFile(){
 }
 
 BOOL SetVerticalScrollRange() {
-    int;
-    LONGLONG b = ScrolledFilesInfo.ReturnBiggestFile() /8 ;
-    for(int i =0; i<2; i++)
-    b = b / 1024;
-    int a = log10(b);
+    int BiggestFileSize = ScrolledFilesInfo.ReturnBiggestFile() /(1024*1024*1024);
+    int ScrollRange = 100;
 
-    a = pow(10, a - 1);
+    if (BiggestFileSize >= 1 && BiggestFileSize <= 5)
+        ScrollRange = pow(10, 3);
+    if (BiggestFileSize >= 5 && BiggestFileSize < 10)
+        ScrollRange = pow(10, 4);
+    if (BiggestFileSize >= 10 && BiggestFileSize < 20)
+        ScrollRange = pow(10, 5);
+    if (BiggestFileSize >= 20 && BiggestFileSize < 40)
+        ScrollRange = pow(10, 6);
+    if (BiggestFileSize >= 40 && BiggestFileSize < 70)
+        ScrollRange = pow(10, 7);
+    if (BiggestFileSize >= 70 && BiggestFileSize < 110)
+        ScrollRange = pow(10, 8);
+    if (BiggestFileSize >= 110)
+        ScrollRange = pow(10, 9);
 
-        return true;
+    for (int i = 0; i < 2; i++)
+        SetScrollRange(WindowInfo.m_UpdatingWindows[i], SB_VERT, 0, ScrollRange, TRUE);
+
+    return true;
 }
 HDC GetEightBitsHex( _In_ HWND Window , _In_ HANDLE File, _In_ DWORD Granularity, _In_ DWORDLONG FileSize, _In_ DWORDLONG OFFSET, 
     _In_ LONG HorizontalOffset , _In_ LONG BytesOnString, _Inout_ HDC BlitHDC) {
@@ -85,7 +98,7 @@ HDC GetEightBitsHex( _In_ HWND Window , _In_ HANDLE File, _In_ DWORD Granularity
        if (Block > FileSize- OFFSET) Block = FileSize-OFFSET;
         PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
        
-        if (Block / BytesOnString < Strings_On_Screen) Block = ceil(Block / (double)BytesOnString); else Block = Strings_On_Screen;
+       /* if (Block / BytesOnString < Strings_On_Screen) Block = ceil(Block / (double)BytesOnString); else*/ Block = Strings_On_Screen;
 
           int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ScrolledFilesInfo.ReturnBiggestFile());
          
@@ -246,6 +259,7 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
 
             }
             i += BytesOnString;
+            if (ScrolledFilesInfo.ReturnSmallestFile() <= i) return DrawDC;
             height += TextMetric.tmHeight;
             if (i == Granularity) {
                 UnmapViewOfFile(WINDOWRFILE);
@@ -442,6 +456,7 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     
     case WM_SIZE: {
+        
             ScrolledFilesInfo.GetNumStringsAndCharOnScreen(WindowInfo.LeftTextWindow);
             LONG HorizontalMaxScroll = ScrolledFilesInfo.HorizontalOffset();
             if (HorizontalMaxScroll!= 0)
@@ -462,7 +477,14 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     case WM_VSCROLL: {
-        DWORDLONG ScrollButtonPos = 0;
+        SCROLLINFO Scrollinfo;
+        Scrollinfo.cbSize = sizeof(SCROLLBARINFO);
+        Scrollinfo.fMask = SIF_RANGE;
+        GetScrollInfo(WindowInfo.LeftTextWindow, SB_VERT, &Scrollinfo);
+       DWORD ScrollRange = Scrollinfo.nMax;
+       Scrollinfo.fMask = SIF_TRACKPOS;
+       GetScrollInfo(WindowInfo.LeftTextWindow, SB_VERT, &Scrollinfo);
+        LONGLONG ScrollButtonPos = 0;
         LONGLONG BiggestFileSize = ScrolledFilesInfo.ReturnBiggestFile();
         int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
        
@@ -486,8 +508,9 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ScrolledFilesInfo.ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
             break;*/
         case SB_THUMBTRACK: 
-            ScrollButtonPos = HIWORD(wParam);
-            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+            
+            ScrollButtonPos =  Scrollinfo.nTrackPos;
+            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((double)ScrollButtonPos / ScrollRange);
             break;
         default:
            break ;
@@ -503,8 +526,8 @@ LRESULT CALLBACK LeftProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SendNotifyMessage(WindowInfo.RightTextWindow, WM_VSCROLL, -1L, -1L);
           
 
-          ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset* 1000)/(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
-            ScrollButtonPos = min(1000, ScrollButtonPos);
+          ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset* ScrollRange)/(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
+            ScrollButtonPos = min(ScrollRange, ScrollButtonPos);
             ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
                 ScrolledFilesInfo.m_ScrollVerticalOffset)));
             SetScrollPos(WindowInfo.LeftTextWindow, SB_VERT, ScrollButtonPos, TRUE);
@@ -743,9 +766,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
             ScrolledFilesInfo.GetRightFileSize(RightFile_a);
-            LONGLONG b = ScrolledFilesInfo.ReturnBiggestFile() / 8;
-            int a = log10(b);
-            a = pow(10, a - 1);
+     
             SetVerticalScrollRange();
            
            // LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
@@ -884,7 +905,14 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         break;
     }
     case WM_VSCROLL: {
-        DWORDLONG ScrollButtonPos = 0;
+        SCROLLINFO Scrollinfo;
+        Scrollinfo.cbSize = sizeof(SCROLLBARINFO);
+        Scrollinfo.fMask = SIF_RANGE;
+        GetScrollInfo(WindowInfo.RightTextWindow, SB_VERT, &Scrollinfo);
+        DWORD ScrollRange = Scrollinfo.nMax;
+        Scrollinfo.fMask = SIF_TRACKPOS;
+        GetScrollInfo(WindowInfo.RightTextWindow, SB_VERT, &Scrollinfo);
+        LONGLONG ScrollButtonPos = 0;
         LONGLONG BiggestFileSize = ScrolledFilesInfo.ReturnBiggestFile();
         int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
 
@@ -904,12 +932,12 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             ScrolledFilesInfo.m_ScrollVerticalOffset -= Strings_On_Screen;
             break;
             /* case SB_THUMBPOSITION:
-                 ScrollButtonPos = HIWORD(wParam);
-                 ScrolledFilesInfo.ScrollVerticalOffset = ceil(ceil(LeftFileSize.LowPart / 8.0) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+                 ScrollButtonPos = MAKELONG(LOWORD(wParam), HIWORD(wParam));
+                 ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((double)ScrollButtonPos / ScrollRange);
                  break;*/
         case SB_THUMBTRACK:
-            ScrollButtonPos = HIWORD(wParam);
-            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((float)ScrollButtonPos / 1000);
+            ScrollButtonPos = Scrollinfo.nTrackPos;
+            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((double)ScrollButtonPos / ScrollRange);
             break;
         default:
             break;
@@ -923,8 +951,8 @@ LRESULT CALLBACK RightProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
             if (wParam != -1)
                 SendNotifyMessage(WindowInfo.LeftTextWindow, WM_VSCROLL, -1L, -1L);
 
-            ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset * 1000) / (ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
-            ScrollButtonPos = min(1000, ScrollButtonPos);
+            ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset * ScrollRange) / (ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
+            ScrollButtonPos = min(ScrollRange, ScrollButtonPos);
             ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
                 ScrolledFilesInfo.m_ScrollVerticalOffset)));
             SetScrollPos(WindowInfo.RightTextWindow, SB_VERT, ScrollButtonPos, TRUE);

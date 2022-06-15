@@ -96,7 +96,7 @@ public:
 			int ReturnScroll = 0;
 			if (OutString > m_CharOnScreen) {
 				if ((ceil(OutString - m_CharOnScreen)) < (StrNum + 2)) 
-					ReturnScroll = OutString - m_CharOnScreen;
+					ReturnScroll = OutString - m_CharOnScreen+2;
 				else 
 					ReturnScroll = StrNum + 2 + (ceil((OutString - m_CharOnScreen - StrNum + 2) / 3));
 				return ReturnScroll;
@@ -139,7 +139,7 @@ public:
 		return m_RightFileSize;
 	}
 	
-	DWORDLONG  m_ScrollVerticalOffset;
+	LONGLONG  m_ScrollVerticalOffset;
 	LONG m_ScrollHorizontalOffset;
 	LONG m_BytesOnString;
 	_int64 m_wheelOffset;
