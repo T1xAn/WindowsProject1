@@ -7,8 +7,8 @@
 #define MAX_LOADSTRING 100
 
 DWORD error;
-// Глобальные переменные:
 
+// Глобальные переменные:
  HANDLE LeftFile;
  HANDLE RightFile;
  ScrollFileInfo ScrolledFilesInfo;

@@ -17,7 +17,6 @@ public:
 		m_LeftFileSize;
 		m_RightFileSize;
 		m_TextMetric;
-		m_wheelOffset = 0;
 	}
 
 	~ScrollFileInfo() {};
@@ -65,11 +64,8 @@ public:
 	BOOL GetTextMetric(_In_ HWND Window, _In_ HFONT FONT) {
 		HDC hdc = GetDC(Window);
 		SelectObject(hdc, FONT);
-		//int indexHDC = SaveDC(hdc);
 		 GetTextMetrics(hdc, &m_TextMetric);
 		 ReleaseDC(Window, hdc);
-		/* HDC HDC = GetDC(Window);*/
-		 //RestoreDC(HDC,-1);
 		 return true;
 	}
 
@@ -91,7 +87,7 @@ public:
 	LONG HorizontalOffset() {
 		char BufferString[100];
 		if (ReturnBiggestFile() != 0 ) {
-			int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX" /*PRIX64*/, ReturnBiggestFile());
+			int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ReturnBiggestFile());
 			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
 			int ReturnScroll = 0;
 			if (OutString > m_CharOnScreen) {
@@ -142,7 +138,7 @@ public:
 	LONGLONG  m_ScrollVerticalOffset;
 	LONG m_ScrollHorizontalOffset;
 	LONG m_BytesOnString;
-	_int64 m_wheelOffset;
+
 private:
 	DWORD m_Granularity; // Гранулярность системы
 	LARGE_INTEGER m_LeftFileSize; //Размер файла открытого в левом окне
@@ -282,7 +278,7 @@ public:
 
 		HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_CLIPCHILDREN,
 			CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-		//int scroll = GetSystemMetrics(SM_CXVSCROLL); // 17
+
 		if (!hWnd)
 		{
 			return FALSE;
@@ -304,10 +300,13 @@ public:
 
 		ShowWindow(hWnd, nCmdShow);
 		UpdateWindow(hWnd);
+
 		ShowWindow(LeftTextWindow, nCmdShow);
 		UpdateWindow(LeftTextWindow);
+
 		ShowWindow(ToolBar, nCmdShow);
 		UpdateWindow(ToolBar);
+
 		ShowWindow(RightTextWindow, nCmdShow);
 		UpdateWindow(RightTextWindow);
 
@@ -321,6 +320,7 @@ public:
 		return ltWindowClass;
 	}
 	
+	// Функция возвращает имя класса левого окна вывода
 	WCHAR* GetLeftWindowTitle() {
 		return ltTitle;
 	}
@@ -354,7 +354,7 @@ public:
 private:
 
 	WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
-	WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
+	WCHAR szWindowClass[MAX_LOADSTRING];            // Имя класса главного окна
 	                        
 	WCHAR ltWindowClass[MAX_LOADSTRING];            // Имя класса левого дочернего окна вывода
 	WCHAR ltTitle[MAX_LOADSTRING];                  // Текст строки заголовка левого дочернего окна

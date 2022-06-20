@@ -2,14 +2,12 @@
 #include "Resource.h"
 #include "Functions_elements.h"
 
-extern HANDLE LeftFile;
-extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
 
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
-//  return Возвращает рассположение файла на компьютере
+//  return Возвращает структура OPENFILENAMEW в которой находится информация о рассположении файла на компьютере
 OPENFILENAMEW buttonGetFile() {
     OPENFILENAMEW F;
     wchar_t szFile[1000];
@@ -31,7 +29,9 @@ OPENFILENAMEW buttonGetFile() {
     return F;
 }
 
-BOOL SetVerticalScrollRange() {
+// Функция SetVerticalScrollRange()
+//  Позволяет произвести расчёт и установить диапазон полосы прокрутки, в зависимости от размера файла
+void SetVerticalScrollRange() {
     int BiggestFileSize = ScrolledFilesInfo.ReturnBiggestFile() / (1024 * 1024 * 1024);
     int ScrollRange = 100;
 
@@ -53,5 +53,5 @@ BOOL SetVerticalScrollRange() {
     for (int i = 0; i < 2; i++)
         SetScrollRange(WindowInfo.m_UpdatingWindows[i], SB_VERT, 0, ScrollRange, TRUE);
 
-    return true;
+    return;
 }

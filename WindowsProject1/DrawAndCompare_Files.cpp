@@ -7,6 +7,9 @@ extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
 
+// Функция GetEightBitsHex()
+// Производит отрисовку содержания файла с учётов горизонтального и вретикального скролла
+// Вывод произвоится в совместимый контекст устройства памяти который впоследстии возвращается в виде переменной 
 HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, _In_ DWORDLONG FileSize, _In_ DWORDLONG OFFSET,
     _In_ LONG HorizontalOffset, _In_ LONG BytesOnString, _Inout_ HDC BlitHDC) {
     DWORD Block = Granularity, height = 1;
@@ -17,7 +20,7 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
     OFFSET = (OFFSET / Granularity);
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
     TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
-
+    
 
     HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
 
@@ -113,6 +116,9 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
     return BlitHDC;
 }
 
+// Функция CompareTwoFiles()
+// Производит сравнение двух файлов, при обнаружении совпадений окрашивает совпадающие фрагменты в красный цвет
+// 
 HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ HANDLE ComparableFile, _In_ DWORDLONG ComparableFileSize, _Inout_ HDC DrawDC,
     _In_ DWORDLONG Offset, _In_ LONG HorizontalOffset, _In_ LONG BytesOnString, _In_ DWORD Granularity) {
 
