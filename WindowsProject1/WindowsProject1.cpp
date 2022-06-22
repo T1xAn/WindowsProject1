@@ -6,8 +6,6 @@
 #include "Functions_elements.h"
 #define MAX_LOADSTRING 100
 
-DWORD error;
-
 // Глобальные переменные:
  HANDLE LeftFile;
  HANDLE RightFile;
@@ -80,7 +78,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         WindowInfo.RightTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetRightWindowClass(), NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
-      error =   GetLastError();
+   
       
       WindowInfo.m_UpdatingWindows[0] = WindowInfo.LeftTextWindow;
       WindowInfo.m_UpdatingWindows[1] = WindowInfo.RightTextWindow;

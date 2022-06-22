@@ -21,6 +21,7 @@ public:
 
 	~ScrollFileInfo() {};
 
+	// Функция получает информацию о гранулярности системы и сохраняет её в переменной класса
 	BOOL GetSystemGranularity()
 	{
 		SYSTEM_INFO SYSINF;
@@ -30,7 +31,8 @@ public:
 			return false;
 		return true;
 	}
-
+	
+	// Функция сохраняет размер левого файла в переменной класса
 	BOOL GetLeftFileSize(_In_ HANDLE LeftFile)
 	{
 		m_LeftFileSize.QuadPart = 0;
@@ -42,6 +44,7 @@ public:
 		return true;
 	}
 
+	// Функция сохраняет размер правого файла в переменной класса
 	BOOL GetRightFileSize(_In_ HANDLE RightFile)
 	{
 		m_RightFileSize.QuadPart = 0;
@@ -52,15 +55,18 @@ public:
 
 		return true;
 	}
-	
+
+	// Функция возвращает размер наибольшего, запущенного в данный момент файла
 	LONGLONG ReturnBiggestFile() {
 		return (max(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
 	}
 
+	// Функция возвращает размер наименьшего, запущенного в данный момент файла
 	LONGLONG ReturnSmallestFile() {
 		return (min(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
 	}
 
+	// Функция обновляет параметры текущего шрифта и сохраняет их в переменной класса
 	BOOL GetTextMetric(_In_ HWND Window, _In_ HFONT FONT) {
 		HDC hdc = GetDC(Window);
 		SelectObject(hdc, FONT);
@@ -102,42 +108,43 @@ public:
 		}
 		return 0;
 	}
-// Функция возвращает метрики выбранного шрифта
+
+	// Функция возвращает метрики выбранного шрифта
 	TEXTMETRIC ReturnTextMetric() 
 	{
 		return m_TextMetric;
 	}
 
-// Функция возвращает гранулярность системы
+	// Функция возвращает гранулярность системы
 	DWORD ReturnGranularity() 
 	{
 		return m_Granularity;
 	}
 
-// Функция возвращает максимальное колличство строк, которое может поместиться на экране
+	// Функция возвращает максимальное колличство строк, которое может поместиться на экране
 	LONG ReturnStringsOnScreen() 
 	{
 		return m_Strings_on_screen;
 	}
 
-// Функция возвращает максимальное колличество символов, которое может поместиться на экране
+	// Функция возвращает максимальное колличество символов, которое может поместиться на экране
 	LONG ReturnCharsOnScreen() {
 		return m_CharOnScreen;
 	}
 
-// Функция возвращает размер файла, открытго в левом окне
+	// Функция возвращает размер файла, открытго в левом окне
 	LARGE_INTEGER ReturnLeftFileSize() 
 	{
 		return m_LeftFileSize;
 	}
-// Функция возвращает размер файла, открытого в правом окне
+	// Функция возвращает размер файла, открытого в правом окне
 	LARGE_INTEGER ReturnRightFileSize() {
 		return m_RightFileSize;
 	}
 	
-	LONGLONG  m_ScrollVerticalOffset;
-	LONG m_ScrollHorizontalOffset;
-	LONG m_BytesOnString;
+	LONGLONG  m_ScrollVerticalOffset; // Текущий оффсет вертикальной полосы прокрутки
+	LONG m_ScrollHorizontalOffset;	  // Текущий оффсет горизонтальной полосы прокрутки
+	LONG m_BytesOnString;			  // Текущее колличество байт, отображаемых в одной строке
 
 private:
 	DWORD m_Granularity; // Гранулярность системы
@@ -273,6 +280,7 @@ public:
 		return TRUE;
 	}
 
+	// Функция запускает процесс инициализации всех окон в программе
 	BOOL CreateAllWindow(_In_ HINSTANCE hInstance, _In_ int nCmdShow ) {
 		hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
 
@@ -335,21 +343,18 @@ public:
 		return rtWindowClass;
 	}
 
-	HWND m_UpdatingWindows[2];
+	HWND m_UpdatingWindows[2];	// Массив окон, подлежащих обновлению 
 	HINSTANCE hInst;
-	HWND ChangeBytesNumButton;
-	HWND LeftSearch;
-	HWND LeftTextbox;
-	HWND RightSearch;
-	HWND RightTextbox;
-	HWND ReadButton;
+	HWND LeftSearch;	// Кнопка поиска файла для левого окна
+	HWND LeftTextbox;	// Текстовое поле, содержащее путь к файлу для левого окна
+	HWND RightSearch;	// Кнопка поиска файла для правого окан
+	HWND RightTextbox;	// Текстовое поле, содержащее путь к файлу для правого окна
+	HWND ReadButton;		// Кнопка чтения и сравнения файлов
 	HWND ChangeFont;
-	HWND List;
+	HWND List;				// Окно-список с выбором колличества байт в строке
 	HWND LeftTextWindow;    // Левое дочернее окно вывода
 	HWND RightTextWindow;	// Правое дочернее окно вывода
 	HWND ToolBar;			// Окно инстументов
-	HWND LeftFileSizeBar;
-	HWND RightFileSizeBar;
 
 private:
 

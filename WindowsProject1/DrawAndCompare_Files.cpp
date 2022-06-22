@@ -2,8 +2,6 @@
 #include "Resource.h"
 #include "Functions_elements.h"
 
-extern HANDLE LeftFile;
-extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
 
@@ -65,8 +63,6 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
         }
         int StrNumOffset = BufferOffset;
 
-
-
         for (int j = HexOffset; j < BytesOnString; j++) {
             BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", LRFILE[i + j]);
         }
@@ -81,8 +77,6 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
             BufferOffset *= TextMetric.tmAveCharWidth;
             TextOutA(BlitHDC, 5, height, (LPCSTR)BufferString, strlen(BufferString));
         }
-
-
 
         int CharOffset = 0;
         for (int j = HexOffset; j < BytesOnString; j++) {
@@ -118,7 +112,7 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
 
 // Функция CompareTwoFiles()
 // Производит сравнение двух файлов, при обнаружении совпадений окрашивает совпадающие фрагменты в красный цвет
-// 
+// Возвращет изменённый контекст устройства памяти для дальнейшей отрисовки на экран  
 HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ HANDLE ComparableFile, _In_ DWORDLONG ComparableFileSize, _Inout_ HDC DrawDC,
     _In_ DWORDLONG Offset, _In_ LONG HorizontalOffset, _In_ LONG BytesOnString, _In_ DWORD Granularity) {
 
@@ -166,6 +160,7 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
             HexOffset = HorizontalOffsetMain;
         HorizontalOffsetMain = 0;
     }
+
     else HorizontalOffsetMain = StrNumOffset - HorizontalOffset;
     i -= Offset;
     for (int count = 0; count < Strings_On_Screen; count++) {
@@ -183,9 +178,11 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
             }
 
         }
+
         i += BytesOnString;
         if (ScrolledFilesInfo.ReturnSmallestFile() <= i) return DrawDC;
         height += TextMetric.tmHeight;
+
         if (i == Granularity) {
             UnmapViewOfFile(WINDOWRFILE);
             UnmapViewOfFile(COMPARABLERFILE);
