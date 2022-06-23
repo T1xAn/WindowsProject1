@@ -152,6 +152,7 @@
     <ClCompile Include="ReadFile_ScrollRange.cpp" />
     <ClCompile Include="RightWindowProc.cpp" />
     <ClCompile Include="ToolWindowProc.cpp" />
+    <ClCompile Include="WindowProc.cpp" />
     <ClCompile Include="WindowsProject1.cpp" />
   </ItemGroup>
   <ItemGroup>

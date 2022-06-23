@@ -68,14 +68,14 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         RECT rect;
         GetClientRect(hWnd, &rect);
         int screen_height = GetSystemMetrics(SM_CYSCREEN);
-        WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetLeftWindowClass(), (LPCWSTR)WindowInfo.GetLeftWindowTitle()
+        WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
         WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
             rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
-        WindowInfo.RightTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetRightWindowClass(), NULL
+        WindowInfo.RightTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
    
@@ -116,6 +116,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 break;
             case IDM_EXIT:
                 if (LeftFile != NULL) CloseHandle(LeftFile);
+                if (RightFile != NULL) CloseHandle(RightFile);
                 DestroyWindow(hWnd);
                 break;
             default:

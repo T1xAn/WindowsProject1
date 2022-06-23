@@ -13,9 +13,8 @@
 #define IDI_SMALL				108
 #define IDC_WINDOWSPROJECT1			109
 #define IDS_LT_TITLE			121
-#define IDC_LeftTextWindow		120
+#define IDC_OutTextWindow		120
 #define IDC_TOOLBARWINDOW		122
-#define IDC_RIGHTTEXTWINDOW		123
 
 #define IDB_ListBox				1005
 #define IDB_SearchButton_Right 1003
