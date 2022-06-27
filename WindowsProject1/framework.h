@@ -19,10 +19,13 @@
 #include <fstream>
 //
 #include <shellapi.h>
-
+#include <vector>
 #include <sstream>
 #include <commctrl.h>
 #include "Classes.h"
+#include "WindowInfo.h"
+
+#include "Comparator.h"
 #include <queue>
 #include <algorithm>
 #include <sal.h>

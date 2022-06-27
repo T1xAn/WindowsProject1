@@ -6,7 +6,7 @@ extern HANDLE LeftFile;
 extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
-
+extern  COMPARATOR Comparator;
 
 LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -88,6 +88,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         case IDB_ReadButton: {
 
+                        
 
             wchar_t FirstFile[1000];
             wchar_t SecondFile[1000];

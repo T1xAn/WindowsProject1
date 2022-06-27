@@ -6,6 +6,7 @@ extern HANDLE LeftFile;
 extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
+extern COMPARATOR Comparator;
 
 // Функция GetEightBitsHex()
 // Производит отрисовку содержания файла с учётов горизонтального и вретикального скролла
