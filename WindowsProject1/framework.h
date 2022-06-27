@@ -18,11 +18,14 @@
 //
 #include <fstream>
 //
+#include <vector>
 #include <shellapi.h>
-
+#include "Comparator.h"
+#include "WindowInfo.h"
 #include <sstream>
 #include <commctrl.h>
 #include "Classes.h"
+
 #include <queue>
 #include <algorithm>
 #include <sal.h>

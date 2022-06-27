@@ -6,11 +6,14 @@
 #include "Functions_elements.h"
 #define MAX_LOADSTRING 100
 
+DWORD error;
+
 // Глобальные переменные:
  HANDLE LeftFile;
  HANDLE RightFile;
  ScrollFileInfo ScrolledFilesInfo;
  MainWindows WindowInfo;
+ COMPARATOR Comparator;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -65,30 +68,58 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     switch (message)
     {
     case WM_CREATE: {
+       
+        cWindowInfo *LeftWindowInfo = new cWindowInfo;
+        cWindowInfo *RightWindowInfo = new cWindowInfo;
+        cWindowInfo *MainWindowInfo = new cWindowInfo;
+
+        MainWindowInfo->SetWindowHandle(hWnd);
+
         RECT rect;
         GetClientRect(hWnd, &rect);
         int screen_height = GetSystemMetrics(SM_CYSCREEN);
-        WindowInfo.LeftTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
+        HWND WindowLeft /*WindowInfo.LeftTextWindow*/ = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
-        WindowInfo.ToolBar = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
-            rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
+        LeftWindowInfo->SetWindowHandle(WindowLeft);
+        SetWindowLongPtr(WindowLeft, GWLP_USERDATA, (LONG_PTR)LeftWindowInfo);
+        Comparator.AddUpdatingWindows(WindowLeft);
+        MainWindowInfo->AddChildWindows(WindowLeft, (char*) "LeftWindow");
 
-        WindowInfo.RightTextWindow = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
+ /*       cWindowInfo *a = (cWindowInfo*)GetWindowLongPtr(WindowLeft, GWLP_USERDATA);
+        HWND b = a->ReturnWindowHWND();*/
+
+       HWND ToolBarWindow = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
+            rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
+        MainWindowInfo->AddChildWindows(ToolBarWindow, (char*) "ToolBarWindow");
+
+       HWND WindowRight = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
-   
+
+       RightWindowInfo->SetWindowHandle(WindowRight);
+       SetWindowLongPtr(WindowRight,GWLP_USERDATA,(LONG_PTR)RightWindowInfo);
+       Comparator.AddUpdatingWindows(WindowRight);
+       MainWindowInfo->AddChildWindows(WindowRight, (char*)"RightWindow");
       
+       SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)MainWindowInfo);
+
+       //////////////////////////////////////////////
+       WindowInfo.ToolBar = ToolBarWindow;
+       WindowInfo.LeftTextWindow = WindowLeft ;
+        WindowInfo.RightTextWindow = WindowRight ;
       WindowInfo.m_UpdatingWindows[0] = WindowInfo.LeftTextWindow;
       WindowInfo.m_UpdatingWindows[1] = WindowInfo.RightTextWindow;
-
+     ////////////////////////////////////////////////////////////////////////////////
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
-        ScrolledFilesInfo.GetTextMetric(WindowInfo.LeftTextWindow, FONT);
+        ScrolledFilesInfo.GetTextMetric(hWnd, FONT);
 
-        for (int i = 0; i < 2; i++) {
-        ShowScrollBar(WindowInfo.m_UpdatingWindows[i], SB_HORZ, FALSE);
-        SetScrollRange(WindowInfo.m_UpdatingWindows[i], SB_VERT, 0, 1000, FALSE);
+        std::vector <HWND> Update = Comparator.ReturnUpdatingWindows();
+
+        for (int i = 0; i < Update.size(); i++) {
+        ShowScrollBar(Update[i], SB_HORZ, FALSE);
+        SetScrollRange(Update[i], SB_VERT, 0, 1000, FALSE);
         }
         
     }
@@ -96,7 +127,8 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     {
         RECT rc;
         GetClientRect(hWnd, &rc);
-
+        cWindowInfo *MainWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+        
         int Screen_height = GetSystemMetrics(SM_CYFULLSCREEN);
         int Menu_height = GetSystemMetrics(SM_CYMENUSIZE);
         MoveWindow(WindowInfo.LeftTextWindow, 0, ceil((Screen_height - Menu_height)*0.1), rc.right / 2, ceil(rc.bottom-(Screen_height - Menu_height) * 0.1), TRUE);
@@ -116,7 +148,6 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 break;
             case IDM_EXIT:
                 if (LeftFile != NULL) CloseHandle(LeftFile);
-                if (RightFile != NULL) CloseHandle(RightFile);
                 DestroyWindow(hWnd);
                 break;
             default:
