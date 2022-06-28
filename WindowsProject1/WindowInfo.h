@@ -45,8 +45,18 @@
 			return TRUE;
 		}
 
+		/////////////////////////////////////////////////////////////////////
 		std::vector <std::pair<char*, HWND>>  ReturnChildWindows() {
 			return m_ChildWindows;
+		}
+		/////////////////////////////////////////////////////////////////////
+
+		HWND FindChildWindow(char* WindowName) {
+			for (int i = 0; i < m_ChildWindows.size(); i++) {
+				if (m_ChildWindows[i].first == WindowName)
+					return m_ChildWindows[i].second;
+			}
+			return NULL;
 		}
 
 		HWND ReturnWindowHWND() {
@@ -66,4 +76,5 @@
 		HANDLE m_File;
 		LARGE_INTEGER m_FileSize;
 		std::vector <std::pair<char*, HWND>> m_ChildWindows;
+		std::vector <char*> m_keys;
 	};

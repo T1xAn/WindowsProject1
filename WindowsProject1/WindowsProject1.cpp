@@ -68,7 +68,6 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     switch (message)
     {
     case WM_CREATE: {
-       
         cWindowInfo *LeftWindowInfo = new cWindowInfo;
         cWindowInfo *RightWindowInfo = new cWindowInfo;
         cWindowInfo *MainWindowInfo = new cWindowInfo;
@@ -78,21 +77,19 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         RECT rect;
         GetClientRect(hWnd, &rect);
         int screen_height = GetSystemMetrics(SM_CYSCREEN);
-        HWND WindowLeft /*WindowInfo.LeftTextWindow*/ = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
+        HWND WindowLeft  = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
             0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
         LeftWindowInfo->SetWindowHandle(WindowLeft);
         SetWindowLongPtr(WindowLeft, GWLP_USERDATA, (LONG_PTR)LeftWindowInfo);
-        Comparator.AddUpdatingWindows(WindowLeft);
+        Comparator.AddUpdatingWindows(WindowLeft, (char*)"LeftWindow");
         MainWindowInfo->AddChildWindows(WindowLeft, (char*) "LeftWindow");
-
- /*       cWindowInfo *a = (cWindowInfo*)GetWindowLongPtr(WindowLeft, GWLP_USERDATA);
-        HWND b = a->ReturnWindowHWND();*/
 
        HWND ToolBarWindow = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
             rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
-        MainWindowInfo->AddChildWindows(ToolBarWindow, (char*) "ToolBarWindow");
+
+       MainWindowInfo->AddChildWindows(ToolBarWindow, (char*) "ToolBarWindow");
 
        HWND WindowRight = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
@@ -100,12 +97,12 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 
        RightWindowInfo->SetWindowHandle(WindowRight);
        SetWindowLongPtr(WindowRight,GWLP_USERDATA,(LONG_PTR)RightWindowInfo);
-       Comparator.AddUpdatingWindows(WindowRight);
+       Comparator.AddUpdatingWindows(WindowRight, (char*)"RightWindow");
        MainWindowInfo->AddChildWindows(WindowRight, (char*)"RightWindow");
       
        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)MainWindowInfo);
 
-       //////////////////////////////////////////////
+       ///////////////////////////////////////////////////////////////////////////////
        WindowInfo.ToolBar = ToolBarWindow;
        WindowInfo.LeftTextWindow = WindowLeft ;
         WindowInfo.RightTextWindow = WindowRight ;
@@ -131,9 +128,10 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         
         int Screen_height = GetSystemMetrics(SM_CYFULLSCREEN);
         int Menu_height = GetSystemMetrics(SM_CYMENUSIZE);
-        MoveWindow(WindowInfo.LeftTextWindow, 0, ceil((Screen_height - Menu_height)*0.1), rc.right / 2, ceil(rc.bottom-(Screen_height - Menu_height) * 0.1), TRUE);
-        MoveWindow(WindowInfo.ToolBar, 0, 0, rc.right, ceil((Screen_height - Menu_height) * 0.1), TRUE);
-        MoveWindow(WindowInfo.RightTextWindow, rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
+
+        MoveWindow(MainWindow->FindChildWindow((char*)"LeftWindow"), 0, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
+        MoveWindow(MainWindow->FindChildWindow((char*)"ToolBarWindow"), 0, 0, rc.right, ceil((Screen_height - Menu_height) * 0.1), TRUE);
+        MoveWindow(MainWindow->FindChildWindow((char*)"RightWindow"), rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
         break;
     }
     case WM_COMMAND:

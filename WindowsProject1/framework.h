@@ -16,6 +16,7 @@
 #include <commdlg.h>
 #include <windowsx.h>
 //
+#include <algorithm>
 #include <fstream>
 //
 #include <vector>
@@ -27,6 +28,6 @@
 #include "Classes.h"
 
 #include <queue>
-#include <algorithm>
+
 #include <sal.h>
 
