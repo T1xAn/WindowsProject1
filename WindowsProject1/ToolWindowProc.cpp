@@ -18,6 +18,8 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GetClientRect(hWnd, &rect);
         int sc = GetSystemMetrics(SM_CXVSCROLL);
         cWindowInfo* CurrentWindowInfo = new cWindowInfo;
+        CurrentWindowInfo->SetWindowHandle(hWnd);
+        CurrentWindowInfo->SetWindowKey((char*)"ToolBarWindow");
         
       HWND LeftTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
             WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, 20, hWnd, NULL, NULL, NULL);
@@ -117,19 +119,18 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             Edit_GetText(CurrentWindowInfo->FindChildWindow((char*)"LeftTextBox"), FirstFile, 1000);
             Edit_GetText(CurrentWindowInfo->FindChildWindow((char*)"RightTextBox"), SecondFile, 1000);
 
-            if (/*Comparator.*/LeftFile != NULL) CloseHandle(LeftFile);
+            if (Comparator.m_LeftFile != NULL) Comparator.CloseFileL();
 
-            if (/*Comparator.*/RightFile != NULL) CloseHandle(RightFile);
+            if (Comparator.m_RightFile != NULL) Comparator.CloseFileR();
 
-            EnableScrollBar(WindowInfo.LeftTextWindow, SB_VERT, ESB_ENABLE_BOTH);//
-            EnableScrollBar(WindowInfo.RightTextWindow, SB_VERT, ESB_ENABLE_BOTH);//
+            Comparator.EnableWindowScrollBar(NULL, TRUE, TRUE);
 
             HANDLE LeftFile_a = CreateFile(FirstFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (GetLastError() != 0) {
                 MessageBox(hWnd, L" Левый файл не был открыт",
                     L"Внимание:", MB_OK | MB_ICONEXCLAMATION);
                 CloseHandle(LeftFile_a);
-                EnableScrollBar(WindowInfo.LeftTextWindow, SB_VERT, ESB_DISABLE_BOTH);
+                Comparator.EnableWindowScrollBar((char*)"LeftWindow", NULL, FALSE);
                 Edit_SetText(CurrentWindowInfo->FindChildWindow((char*)"LeftTextBox"), L"");
             }
             HANDLE RightFile_a = CreateFile(SecondFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -137,7 +138,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 MessageBox(hWnd, L" Правый файл не был открыт",
                     L"Внимание: ", MB_OK | MB_ICONEXCLAMATION);
                 CloseHandle(RightFile_a);
-                EnableScrollBar(WindowInfo.RightTextWindow, SB_VERT, ESB_DISABLE_BOTH);
+                Comparator.EnableWindowScrollBar((char*)"RightWindow", NULL, FALSE);
                 Edit_SetText(CurrentWindowInfo->FindChildWindow((char*)"RightTextBox"), L"");
             }
 
@@ -150,18 +151,26 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SetVerticalScrollRange();
 
             /// Maping errors comparator (function)
-            LeftFile = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+             HANDLE LeftFileN = CreateFileMapping(LeftFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+             
             if (GetLastError() != 0) {
-                CloseHandle(LeftFile);
+                CloseHandle(LeftFileN);
                 Comparator.UpdateKeyWindow((char*)"LeftWindow");
             }
-            RightFile = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
+            Comparator.AddNewOpendFile((char*)"LeftWindow", LeftFileN);
+            HANDLE RightFileN = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
             if (GetLastError() != 0) {
-                CloseHandle(RightFile);
+                CloseHandle(RightFileN);
                 Comparator.UpdateKeyWindow((char*)"RightWindow");
             }
-            if (LeftFile == NULL && RightFile == NULL) { MessageBox(hWnd, L"Оба файла не были открыты", L" Ошибка ", MB_OK | MB_ICONERROR);  break; }
 
+            Comparator.AddNewOpendFile((char*)"RightWindow", RightFileN);
+            if (LeftFileN == NULL && RightFileN == NULL) { MessageBox(hWnd, L"Оба файла не были открыты", L" Ошибка ", MB_OK | MB_ICONERROR);  break; }
+
+            //////
+            LeftFile = LeftFileN;
+            RightFile = RightFileN;
+            //////
 
             Comparator.DrawNewFiles();
 
@@ -180,7 +189,6 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 double PrewBytesOnString = ScrolledFilesInfo.m_BytesOnString;
                 ScrolledFilesInfo.m_BytesOnString = SendMessage(List, LB_GETITEMDATA, I, 0L);
                 int BytesOnfStringNumenator = max(PrewBytesOnString, ScrolledFilesInfo.m_BytesOnString);
-                LARGE_INTEGER LeftFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
 
                 ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
                 ScrolledFilesInfo.m_ScrollVerticalOffset = floor((ScrolledFilesInfo.m_ScrollVerticalOffset * (PrewBytesOnString / ScrolledFilesInfo.m_BytesOnString)));

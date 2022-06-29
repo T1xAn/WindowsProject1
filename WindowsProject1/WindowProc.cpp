@@ -6,7 +6,7 @@ extern HANDLE LeftFile;
 extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
-
+extern COMPARATOR Comparator;
 //
 //  ÔÓÍÊÖÈß: OutWindowsProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -64,7 +64,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     }
     case WM_VSCROLL: {
-        HWND OtherWindow;
+    /*    HWND OtherWindow;
         HANDLE CurrentFile;
         if (hWnd == WindowInfo.LeftTextWindow) {
             OtherWindow = WindowInfo.RightTextWindow;
@@ -73,7 +73,10 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         else {
             OtherWindow = WindowInfo.LeftTextWindow;
             CurrentFile = RightFile;
-        }
+        }*/
+        cWindowInfo *CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+       
+
         SCROLLINFO Scrollinfo;
         Scrollinfo.cbSize = sizeof(SCROLLBARINFO);
         Scrollinfo.fMask = SIF_RANGE;
@@ -109,11 +112,11 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         }
         
 
-        if (CurrentFile != NULL)
+        if (CurrentWindow->ReturnFileHANDLE() != NULL)
         {
 
             if (wParam != -1)
-                SendNotifyMessage(OtherWindow, WM_VSCROLL, -1L, -1L);
+                Comparator.SendVerticalScrollMessage(hWnd);
 
 
             ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset * ScrollRange) / (ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
@@ -128,7 +131,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     }
     case WM_HSCROLL: {
 
-        HWND OtherWindow;
+    /*    HWND OtherWindow;
         HANDLE CurrentFile;
         if (hWnd == WindowInfo.LeftTextWindow) {
             OtherWindow = WindowInfo.RightTextWindow;
@@ -137,7 +140,9 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         else {
             OtherWindow = WindowInfo.LeftTextWindow;
             CurrentFile = RightFile;
-        }
+        }*/
+
+        cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
         DWORDLONG ScrollHorizontalButtonPos = 0;
         LONG CharOnString = ScrolledFilesInfo.ReturnCharsOnScreen();
@@ -157,12 +162,12 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             break;
         }
 
-        if (CurrentFile != NULL)
+        if (CurrentWindow->ReturnFileHANDLE() != NULL)
         {
 
 
             if (wParam != -1)
-                SendNotifyMessage(OtherWindow, WM_HSCROLL, -1L, -1L);
+                Comparator.SendHorizontalScrollMessage(hWnd);
 
             int MaxRange = 0, MinRange = 0;
             GetScrollRange(hWnd, SB_HORZ, &MinRange, &MaxRange);
@@ -199,17 +204,18 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         HANDLE OtherFile;
         HANDLE CurrentFile;
         LARGE_INTEGER CurrentFileSize, OtherFileSize;
+        cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
         if (hWnd == WindowInfo.LeftTextWindow) {
             OtherFile = RightFile;
             CurrentFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
             OtherFileSize = ScrolledFilesInfo.ReturnRightFileSize();
-            CurrentFile = LeftFile;
+            CurrentFile = CurrentWindow->ReturnFileHANDLE();
         }
         else {
             OtherFile = LeftFile;
             CurrentFileSize = ScrolledFilesInfo.ReturnRightFileSize();
             OtherFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-            CurrentFile = RightFile;
+            CurrentFile = CurrentWindow->ReturnFileHANDLE();
         }
 
         if (CurrentFile != NULL) {

@@ -21,11 +21,20 @@
 			return TRUE;
 		}
 
+		BOOL SetWindowKey(char* key) {
+			m_key = key;
+			return TRUE;
+		}
+
 		BOOL SetWindowFileHandle(_In_ HANDLE newFile) {
 			
 			m_File = newFile;
-	/*		if (m_File == )
-				return FALSE;*/
+			SetWindowFileSize();
+			return TRUE;
+		}
+
+		BOOL CloseFileHandle() {
+			CloseHandle(m_File);
 			return TRUE;
 		}
 
@@ -76,5 +85,5 @@
 		HANDLE m_File;
 		LARGE_INTEGER m_FileSize;
 		std::vector <std::pair<char*, HWND>> m_ChildWindows;
-		std::vector <char*> m_keys;
+		char* m_key;
 	};

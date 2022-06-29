@@ -21,8 +21,9 @@
 //
 #include <vector>
 #include <shellapi.h>
-#include "Comparator.h"
 #include "WindowInfo.h"
+#include "Comparator.h"
+
 #include <sstream>
 #include <commctrl.h>
 #include "Classes.h"

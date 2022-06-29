@@ -82,6 +82,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
             0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
         LeftWindowInfo->SetWindowHandle(WindowLeft);
+        LeftWindowInfo->SetWindowKey((char*)"LeftWindow");
         SetWindowLongPtr(WindowLeft, GWLP_USERDATA, (LONG_PTR)LeftWindowInfo);
         Comparator.AddUpdatingWindows(WindowLeft, (char*)"LeftWindow");
         MainWindowInfo->AddChildWindows(WindowLeft, (char*) "LeftWindow");
@@ -96,6 +97,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
             rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
        RightWindowInfo->SetWindowHandle(WindowRight);
+       RightWindowInfo->SetWindowKey((char*)"RightWindow");
        SetWindowLongPtr(WindowRight,GWLP_USERDATA,(LONG_PTR)RightWindowInfo);
        Comparator.AddUpdatingWindows(WindowRight, (char*)"RightWindow");
        MainWindowInfo->AddChildWindows(WindowRight, (char*)"RightWindow");
