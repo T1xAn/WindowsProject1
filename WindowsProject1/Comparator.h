@@ -23,6 +23,23 @@ public:
 			return -1;
 	}
 
+	BOOL AddWindows(HWND Window) {
+		m_allWindows.push_back(Window);
+		return TRUE;
+	}
+
+	BOOL VerifyAndShowAllWindows(int nCmdShow) {
+		
+		for (int i = 0; i < m_allWindows.size(); i++) {
+			if (!m_allWindows[i])
+				return FALSE;
+			ShowWindow(m_allWindows[i], nCmdShow);
+			UpdateWindow(m_allWindows[i]);
+		}
+		return TRUE;
+	}
+
+
 	BOOL AddUpdatingWindows(HWND Window, char* WindowKey) {
 		m_UpdatingWindowsKeys.push_back(WindowKey);
 		m_UpdatingWindows.push_back(Window);
@@ -75,6 +92,11 @@ public:
 		}
 	}
 
+	void SetNewVerticalScrollRange(int newRange) {
+		for (int i = 0; i < m_UpdatingWindows.size(); i++)
+			SetScrollRange(m_UpdatingWindows[i], SB_VERT, 0, newRange, TRUE);
+	}
+
 	void ResetHorizontalScroll() {
 		for (int i = 0; i < m_UpdatingWindows.size(); i++) {
 			SetScrollPos(m_UpdatingWindows[i], SB_HORZ, 0, TRUE);
@@ -114,6 +136,12 @@ public:
 		
 	}
 
+	void SendWMPaintMessage(HWND Window) {
+		for (int key = 0; key < m_UpdatingWindows.size(); key++) {
+			if (m_UpdatingWindows[key] == Window)
+				SendNotifyMessage(m_UpdatingWindows[key], WM_PAINT, 0, 0);
+		}
+	}
 	/*BOOL AddNewOpendFile(char* WindowKey, HANDLE File) {
 
 		int key = FindWindowWithKey(WindowKey);
@@ -149,50 +177,57 @@ public:
 		return FALSE;
 	}
 	
-
+	cWindowInfo* FindOtherComparableFile(HWND CurrentWindow) {
+		for (int i = 0; i < 2; i++) {
+			if (CurrentWindow != m_UpdatingWindows[i])
+				return (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
+		}
+		return NULL;
+	}
 /////////////////////////////////////////////////////////////////////////
 	HANDLE m_RightFile, m_LeftFile;
 
-	BOOL AddNewOpendFile(char* WindowKey, HANDLE File) {
+	BOOL AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
 
 		int key = FindWindowWithKey(WindowKey);
 		if (key == -1)
 			return FALSE;
 
 		if (m_UpdatingWindowsKeys[key] == (char*)"LeftWindow")
-			m_LeftFile = File;
+			m_LeftFile = FileMap;
 		else
-			m_RightFile = File;
+			m_RightFile = FileMap;
 
 		cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[key], GWLP_USERDATA);
-		Window->SetWindowFileHandle(File);
+		Window->SetWindowFileHandle(FileMap, File);
 		return TRUE;
 
 	}
 
 	void CloseFileR() {
 		CloseHandle(m_RightFile);
-		//for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
-		//	if (m_UpdatingWindowsKeys[i] == (char*)"RightWindow") {
-		//		cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
-		//		Window->CloseFileHandle();
-		//	}
-		//}
+		for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
+			if (m_UpdatingWindowsKeys[i] == (char*)"RightWindow") {
+				cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
+				Window->CloseFileHandle();
+			}
+		}
 	}
 
 	void CloseFileL() {
 		CloseHandle(m_LeftFile);
-		/*for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
+		for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
 			if (m_UpdatingWindowsKeys[i] == (char*)"LeftWindow") {
 				cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
 				Window->CloseFileHandle();
 			}
-		}*/
+		}
 	}
 
 /////////////////////////////////////////////////////////////////////////////////
 private:
 	std::vector <char*> m_UpdatingWindowsKeys;
 	std::vector <HWND> m_UpdatingWindows;
-	std::vector < std::pair <int, HANDLE>> m_OpendFiles;
+	std::vector <std::pair <int, HANDLE>> m_OpendFiles;
+	std::vector <HWND> m_allWindows;
 };

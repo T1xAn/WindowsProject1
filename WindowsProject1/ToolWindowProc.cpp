@@ -52,14 +52,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, hWnd, (HMENU)IDB_ListBox, WindowInfo.hInst, nullptr);
         CurrentWindowInfo->AddChildWindows(List, (char*)"List");
 
-        //////////////////////////////////////
-        WindowInfo.LeftTextbox = LeftTextBox;
-        WindowInfo.LeftSearch = LeftSearch;
-        WindowInfo.ReadButton = ReadButton;
-        WindowInfo.RightTextbox = RightTextBox;
-        WindowInfo.RightSearch = RightSearch;
-        WindowInfo.List = List;
-        ///////////////////////////////////
+        Comparator.AddWindows(List);
 
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"8");
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"16");
@@ -157,14 +150,14 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 CloseHandle(LeftFileN);
                 Comparator.UpdateKeyWindow((char*)"LeftWindow");
             }
-            Comparator.AddNewOpendFile((char*)"LeftWindow", LeftFileN);
+            Comparator.AddNewOpendFile((char*)"LeftWindow", LeftFileN, LeftFile_a);
             HANDLE RightFileN = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
             if (GetLastError() != 0) {
                 CloseHandle(RightFileN);
                 Comparator.UpdateKeyWindow((char*)"RightWindow");
             }
 
-            Comparator.AddNewOpendFile((char*)"RightWindow", RightFileN);
+            Comparator.AddNewOpendFile((char*)"RightWindow", RightFileN, RightFile_a);
             if (LeftFileN == NULL && RightFileN == NULL) { MessageBox(hWnd, L"Оба файла не были открыты", L" Ошибка ", MB_OK | MB_ICONERROR);  break; }
 
             //////

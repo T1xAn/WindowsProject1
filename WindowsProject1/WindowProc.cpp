@@ -32,9 +32,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         else
             ScrolledFilesInfo.m_ScrollVerticalOffset += 5;
 
-        for (int i = 0; i < 2; i++) {
-            SendMessage(WindowInfo.m_UpdatingWindows[i], WM_VSCROLL, -1L, 0L);
-        }
+        Comparator.SendVerticalScrollMessage(NULL);
 
         break;
     }
@@ -64,19 +62,8 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     }
     case WM_VSCROLL: {
-    /*    HWND OtherWindow;
-        HANDLE CurrentFile;
-        if (hWnd == WindowInfo.LeftTextWindow) {
-            OtherWindow = WindowInfo.RightTextWindow;
-            CurrentFile = LeftFile;
-        }
-        else {
-            OtherWindow = WindowInfo.LeftTextWindow;
-            CurrentFile = RightFile;
-        }*/
+        
         cWindowInfo *CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-       
-
         SCROLLINFO Scrollinfo;
         Scrollinfo.cbSize = sizeof(SCROLLBARINFO);
         Scrollinfo.fMask = SIF_RANGE;
@@ -124,23 +111,12 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
                 ScrolledFilesInfo.m_ScrollVerticalOffset)));
             SetScrollPos(hWnd, SB_VERT, ScrollButtonPos, TRUE);
-            SendMessage(hWnd, WM_PAINT, 0, 0);
+            Comparator.SendWMPaintMessage(hWnd);
 
         }
         break;
     }
     case WM_HSCROLL: {
-
-    /*    HWND OtherWindow;
-        HANDLE CurrentFile;
-        if (hWnd == WindowInfo.LeftTextWindow) {
-            OtherWindow = WindowInfo.RightTextWindow;
-            CurrentFile = LeftFile;
-        }
-        else {
-            OtherWindow = WindowInfo.LeftTextWindow;
-            CurrentFile = RightFile;
-        }*/
 
         cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
@@ -178,7 +154,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
             SetScrollPos(hWnd, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
 
-            SendMessage(hWnd, WM_PAINT, 0, 0);
+            Comparator.SendWMPaintMessage(hWnd);
 
         }
         break;
@@ -201,24 +177,12 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
 
-        HANDLE OtherFile;
-        HANDLE CurrentFile;
-        LARGE_INTEGER CurrentFileSize, OtherFileSize;
         cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-        if (hWnd == WindowInfo.LeftTextWindow) {
-            OtherFile = RightFile;
-            CurrentFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-            OtherFileSize = ScrolledFilesInfo.ReturnRightFileSize();
-            CurrentFile = CurrentWindow->ReturnFileHANDLE();
-        }
-        else {
-            OtherFile = LeftFile;
-            CurrentFileSize = ScrolledFilesInfo.ReturnRightFileSize();
-            OtherFileSize = ScrolledFilesInfo.ReturnLeftFileSize();
-            CurrentFile = CurrentWindow->ReturnFileHANDLE();
-        }
+        LARGE_INTEGER CurrentFileSize = CurrentWindow->ReturnFileSize();
+        HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE();
 
         if (CurrentFile != NULL) {
+
             RECT rc;
             GetClientRect(hWnd, &rc);
             hdc = GetDC(hWnd);
@@ -231,6 +195,11 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
             BlitHDC = GetEightBitsHex(hWnd, CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);
+
+            cWindowInfo* OtherWindow = Comparator.FindOtherComparableFile(hWnd);
+            HANDLE OtherFile = OtherWindow->ReturnFileHANDLE();
+            LARGE_INTEGER OtherFileSize = OtherWindow->ReturnFileSize();
+
             if (OtherFile != NULL) {
                 BlitHDC = CompareTwoFiles(CurrentFile, CurrentFileSize.QuadPart, OtherFile, OtherFileSize.QuadPart, BlitHDC, ScrolledFilesInfo.m_ScrollVerticalOffset,
                     ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, ScrolledFilesInfo.ReturnGranularity());

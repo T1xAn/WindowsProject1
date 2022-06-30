@@ -26,27 +26,31 @@
 			return TRUE;
 		}
 
-		BOOL SetWindowFileHandle(_In_ HANDLE newFile) {
+		BOOL SetWindowFileHandle(_In_ HANDLE newFileMap, _In_ HANDLE File) {
 			
-			m_File = newFile;
-			SetWindowFileSize();
+			m_File = newFileMap;
+			SetWindowFileSize(File);
 			return TRUE;
+		}
+
+		BOOL SetWindowFileSize(HANDLE File) {
+			m_FileSize.QuadPart = 0;
+			GetFileSizeEx(File, &m_FileSize);
+
+			DWORD error = GetLastError();
+
+			if (m_FileSize.QuadPart == 0)
+				return false;
+
+			return true;
 		}
 
 		BOOL CloseFileHandle() {
-			CloseHandle(m_File);
+			m_File = NULL;
 			return TRUE;
 		}
 
-		BOOL SetWindowFileSize() {
-				m_FileSize.QuadPart = 0;
-				GetFileSizeEx(m_File, &m_FileSize);
 
-				if (m_FileSize.QuadPart == 0)
-					return false;
-
-				return true;
-		}
 
 		BOOL AddChildWindows(HWND Window ,char* WindowName) {
 

@@ -104,13 +104,11 @@ LRESULT CALLBACK WndProc(HWND hWnd,
       
        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)MainWindowInfo);
 
-       ///////////////////////////////////////////////////////////////////////////////
-       WindowInfo.ToolBar = ToolBarWindow;
-       WindowInfo.LeftTextWindow = WindowLeft ;
-        WindowInfo.RightTextWindow = WindowRight ;
-      WindowInfo.m_UpdatingWindows[0] = WindowInfo.LeftTextWindow;
-      WindowInfo.m_UpdatingWindows[1] = WindowInfo.RightTextWindow;
-     ////////////////////////////////////////////////////////////////////////////////
+       Comparator.AddWindows(hWnd);
+       Comparator.AddWindows(WindowLeft);
+       Comparator.AddWindows(WindowRight);
+       Comparator.AddWindows(ToolBarWindow);
+
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
         ScrolledFilesInfo.GetTextMetric(hWnd, FONT);
 

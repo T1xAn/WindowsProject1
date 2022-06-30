@@ -2,6 +2,7 @@
 #include "framework.h"
 #include "Resource.h"
 
+extern COMPARATOR Comparator;
 #define MAX_LOADSTRING 100
 
 class ScrollFileInfo
@@ -262,40 +263,7 @@ public:
 		HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_MAXIMIZE | WS_CLIPCHILDREN,
 			CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-		if (!hWnd)
-		{
-			return FALSE;
-		}
-
-		if (!LeftTextWindow)
-		{
-			return FALSE;
-		}
-
-		if (!ToolBar)
-		{
-			return FALSE;
-		}
-
-		if (!RightTextWindow) {
-			return FALSE;
-		}
-
-		ShowWindow(hWnd, nCmdShow);
-		UpdateWindow(hWnd);
-
-		ShowWindow(LeftTextWindow, nCmdShow);
-		UpdateWindow(LeftTextWindow);
-
-		ShowWindow(ToolBar, nCmdShow);
-		UpdateWindow(ToolBar);
-
-		ShowWindow(RightTextWindow, nCmdShow);
-		UpdateWindow(RightTextWindow);
-
-		ShowWindow(List, nCmdShow);
-		UpdateWindow(List);
-		return TRUE;
+		return Comparator.VerifyAndShowAllWindows(nCmdShow);
 	}
 
 	// Функция возвращает имю класса окон вывода
@@ -309,19 +277,7 @@ public:
 		return tbWindowClass;
 	}
 
-
-	HWND m_UpdatingWindows[2];	// Массив окон, подлежащих обновлению 
 	HINSTANCE hInst;
-	HWND LeftSearch;	// Кнопка поиска файла для левого окна
-	HWND LeftTextbox;	// Текстовое поле, содержащее путь к файлу для левого окна
-	HWND RightSearch;	// Кнопка поиска файла для правого окан
-	HWND RightTextbox;	// Текстовое поле, содержащее путь к файлу для правого окна
-	HWND ReadButton;		// Кнопка чтения и сравнения файлов
-	HWND ChangeFont;
-	HWND List;				// Окно-список с выбором колличества байт в строке
-	HWND LeftTextWindow;    // Левое дочернее окно вывода
-	HWND RightTextWindow;	// Правое дочернее окно вывода
-	HWND ToolBar;			// Окно инстументов
 
 private:
 

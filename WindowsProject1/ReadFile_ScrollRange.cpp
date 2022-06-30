@@ -4,6 +4,7 @@
 
 extern ScrollFileInfo ScrolledFilesInfo;
 extern MainWindows WindowInfo;
+extern COMPARATOR Comparator;
 
 // Функция buttonGetFile(OPENFILENAME F) 
 //  Позволяет произвести поиск нужного файла через провдник
@@ -50,8 +51,7 @@ void SetVerticalScrollRange() {
     if (BiggestFileSize >= 110)
         ScrollRange = pow(10, 9);
 
-    for (int i = 0; i < 2; i++)
-        SetScrollRange(WindowInfo.m_UpdatingWindows[i], SB_VERT, 0, ScrollRange, TRUE);
+    Comparator.SetNewVerticalScrollRange(ScrollRange);
 
     return;
 }
