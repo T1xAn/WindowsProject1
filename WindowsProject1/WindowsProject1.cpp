@@ -145,7 +145,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 DialogBox(WindowInfo.hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
             case IDM_EXIT:
-                if (LeftFile != NULL) CloseHandle(LeftFile);
+               // if (LeftFile != NULL) CloseHandle(LeftFile);
                 DestroyWindow(hWnd);
                 break;
             default:

@@ -112,9 +112,11 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             Edit_GetText(CurrentWindowInfo->FindChildWindow((char*)"LeftTextBox"), FirstFile, 1000);
             Edit_GetText(CurrentWindowInfo->FindChildWindow((char*)"RightTextBox"), SecondFile, 1000);
 
-            if (Comparator.m_LeftFile != NULL) Comparator.CloseFileL();
+            /*if (Comparator.m_LeftFile != NULL) Comparator.CloseFileL();
 
-            if (Comparator.m_RightFile != NULL) Comparator.CloseFileR();
+            if (Comparator.m_RightFile != NULL) Comparator.CloseFileR();*/
+
+            Comparator.CloseMainWindowsOpenFiles();
 
             Comparator.EnableWindowScrollBar(NULL, TRUE, TRUE);
 
@@ -150,25 +152,24 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 CloseHandle(LeftFileN);
                 Comparator.UpdateKeyWindow((char*)"LeftWindow");
             }
+
+            if(LeftFileN != NULL)
             Comparator.AddNewOpendFile((char*)"LeftWindow", LeftFileN, LeftFile_a);
             HANDLE RightFileN = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
             if (GetLastError() != 0) {
                 CloseHandle(RightFileN);
                 Comparator.UpdateKeyWindow((char*)"RightWindow");
             }
-
+            if (RightFileN != NULL)
             Comparator.AddNewOpendFile((char*)"RightWindow", RightFileN, RightFile_a);
             if (LeftFileN == NULL && RightFileN == NULL) { MessageBox(hWnd, L"Оба файла не были открыты", L" Ошибка ", MB_OK | MB_ICONERROR);  break; }
 
-            //////
-            LeftFile = LeftFileN;
-            RightFile = RightFileN;
-            //////
+           
 
             Comparator.DrawNewFiles();
 
-            CloseHandle(LeftFile_a);
-            CloseHandle(RightFile_a);
+            //CloseHandle(LeftFile_a);
+            //CloseHandle(RightFile_a);
 
             break;
         }
