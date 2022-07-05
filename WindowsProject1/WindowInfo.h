@@ -47,6 +47,8 @@
 
 		BOOL CloseFileHandle() {
 			m_File = NULL;
+		
+			ZeroMemory(&m_FileSize, sizeof(LARGE_INTEGER));
 			return TRUE;
 		}
 

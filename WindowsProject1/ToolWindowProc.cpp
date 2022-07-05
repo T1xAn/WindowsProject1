@@ -52,6 +52,9 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, hWnd, (HMENU)IDB_ListBox, WindowInfo.hInst, nullptr);
         CurrentWindowInfo->AddChildWindows(List, (char*)"List");
 
+      /*  HWND OpenNewWindow = CreateWindowA("button", "Сравнить", WS_CHILD |
+            WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);*/
+
         Comparator.AddWindows(List);
 
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"8");
@@ -140,8 +143,6 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
             ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
 
-            ScrolledFilesInfo.GetLeftFileSize(LeftFile_a);
-            ScrolledFilesInfo.GetRightFileSize(RightFile_a);
 
             SetVerticalScrollRange();
 
@@ -155,6 +156,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             if(LeftFileN != NULL)
             Comparator.AddNewOpendFile((char*)"LeftWindow", LeftFileN, LeftFile_a);
+
             HANDLE RightFileN = CreateFileMapping(RightFile_a, NULL, PAGE_READONLY, 0, 0, NULL);
             if (GetLastError() != 0) {
                 CloseHandle(RightFileN);

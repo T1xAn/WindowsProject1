@@ -5,6 +5,7 @@
 #include "WindowsProject1.h"
 #include "Functions_elements.h"
 #define MAX_LOADSTRING 100
+#define NUMBER_OF_WINDOWS 2
 
 DWORD error;
 
@@ -111,6 +112,10 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
         ScrolledFilesInfo.GetTextMetric(hWnd, FONT);
+
+        ///
+        Comparator.AddNewOpendFile((char*)"ToolBarWindow", NULL, NULL);
+        ///
 
         std::vector <HWND> Update = Comparator.ReturnUpdatingWindows();
 

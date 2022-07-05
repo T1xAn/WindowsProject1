@@ -15,7 +15,7 @@
 #define IDS_LT_TITLE			121
 #define IDC_OutTextWindow		120
 #define IDC_TOOLBARWINDOW		122
-
+#define IDB_OpenNewWindow		1010
 #define IDB_ListBox				1005
 #define IDB_SearchButton_Right 1003
 #define IDB_Change_Font			1004

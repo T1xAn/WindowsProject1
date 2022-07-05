@@ -156,8 +156,8 @@ public:
 
 	}
 
-	HANDLE ReturnFileHandle(HWND WindowKey) {
-
+	std::vector <std::pair <int, std::pair<HANDLE, HANDLE>>> ReturnOpenFileHandles() {
+		return m_OpendFiles;
 	}
 
 	BOOL DeleteOpenFileHandle(char* WindowKey) {
@@ -197,70 +197,31 @@ public:
 			int key = 0;
 			while (i != m_OpendFiles[key].first) {
 				key++;
-				if (key > m_OpendFiles.size()-1)
-					return FALSE;
-				
+				if (key > m_OpendFiles.size() - 1)
+					break;
 			}
 
-			if (m_OpendFiles[key].second.first != NULL) {
-				CloseHandle(m_OpendFiles[key].second.first);
-				cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[key], GWLP_USERDATA);
-				Window->CloseFileHandle();
-			}
-				
-			if(m_OpendFiles[key].second.second != NULL)
-				CloseHandle(m_OpendFiles[key].second.second);
+			if (key <= m_OpendFiles.size() - 1) {
+				if (m_OpendFiles[key].second.first != NULL) {
+					CloseHandle(m_OpendFiles[key].second.first);
+					cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[m_OpendFiles[key].first], GWLP_USERDATA);
+					Window->CloseFileHandle();
+				}
 
-			
+				if (m_OpendFiles[key].second.second != NULL)
+					CloseHandle(m_OpendFiles[key].second.second);
+
+
 				std::vector < std::pair <int, std::pair<HANDLE, HANDLE>>>::iterator iterator = m_OpendFiles.begin() + key;
 				m_OpendFiles.erase(iterator);
-		
 
+				if (m_OpendFiles.size() == 0) return TRUE;
+			}
 		}
 
 		return TRUE;
 	}
-/////////////////////////////////////////////////////////////////////////
-	/*HANDLE m_RightFile, m_LeftFile;*/
 
-	//BOOL AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
-
-	//	int key = FindWindowWithKey(WindowKey);
-	//	if (key == -1)
-	//		return FALSE;
-
-	//	if (m_UpdatingWindowsKeys[key] == (char*)"LeftWindow")
-	//		m_LeftFile = FileMap;
-	//	else
-	//		m_RightFile = FileMap;
-
-	//	cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[key], GWLP_USERDATA);
-	//	Window->SetWindowFileHandle(FileMap, File);
-	//	return TRUE;
-
-	//}
-
-	//void CloseFileR() {
-	//	CloseHandle(m_RightFile);
-	//	for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
-	//		if (m_UpdatingWindowsKeys[i] == (char*)"RightWindow") {
-	//			cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
-	//			Window->CloseFileHandle();
-	//		}
-	//	}
-	//}
-
-	//void CloseFileL() {
-	//	CloseHandle(m_LeftFile);
-	//	for (int i = 0; i < m_UpdatingWindowsKeys.size(); i++) {
-	//		if (m_UpdatingWindowsKeys[i] == (char*)"LeftWindow") {
-	//			cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
-	//			Window->CloseFileHandle();
-	//		}
-	//	}
-	//}
-
-/////////////////////////////////////////////////////////////////////////////////
 private:
 	std::vector <char*> m_UpdatingWindowsKeys;
 	std::vector <HWND> m_UpdatingWindows;

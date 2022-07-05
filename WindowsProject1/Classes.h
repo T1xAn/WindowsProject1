@@ -15,8 +15,6 @@ public:
 		m_CharOnScreen = 0;
 		m_ScrollHorizontalOffset = 0;
 		m_BytesOnString = 8;
-		m_LeftFileSize;
-		m_RightFileSize;
 		m_TextMetric;
 	}
 
@@ -32,39 +30,47 @@ public:
 			return false;
 		return true;
 	}
-	
-	// Функция сохраняет размер левого файла в переменной класса
-	BOOL GetLeftFileSize(_In_ HANDLE LeftFile)
-	{
-		m_LeftFileSize.QuadPart = 0;
-		GetFileSizeEx(LeftFile, &m_LeftFileSize);
-
-		if (m_LeftFileSize.QuadPart == 0) 
-			return false;
-
-		return true;
-	}
-
-	// Функция сохраняет размер правого файла в переменной класса
-	BOOL GetRightFileSize(_In_ HANDLE RightFile)
-	{
-		m_RightFileSize.QuadPart = 0;
-		GetFileSizeEx(RightFile, &m_RightFileSize);
-
-		if (m_RightFileSize.QuadPart == 0)
-			return false;
-
-		return true;
-	}
 
 	// Функция возвращает размер наибольшего, запущенного в данный момент файла
 	LONGLONG ReturnBiggestFile() {
-		return (max(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
+		std::vector <std::pair <int, std::pair<HANDLE, HANDLE>>> OpenFiles = Comparator.ReturnOpenFileHandles();
+		if (OpenFiles.size() == 0) return 0;
+		if (OpenFiles.size() == 1) {
+			LARGE_INTEGER File;
+			GetFileSizeEx(OpenFiles[0].second.second, &File);
+			return File.QuadPart;
+		}
+		LONGLONG MaxSize = LLONG_MIN;
+		for (int i = 0; i < OpenFiles.size() - 1; i++) {
+			LARGE_INTEGER FirstFile, SecondFile;
+			GetFileSizeEx(OpenFiles[i].second.second, &FirstFile);
+			GetFileSizeEx(OpenFiles[i+1].second.second, &SecondFile);
+			LONGLONG NewMax = max(FirstFile.QuadPart, SecondFile.QuadPart);
+			if (NewMax > MaxSize) MaxSize = NewMax;
+
+		}
+		return MaxSize;
 	}
 
 	// Функция возвращает размер наименьшего, запущенного в данный момент файла
 	LONGLONG ReturnSmallestFile() {
-		return (min(m_LeftFileSize.QuadPart, m_RightFileSize.QuadPart));
+		std::vector <std::pair <int, std::pair<HANDLE, HANDLE>>> OpenFiles = Comparator.ReturnOpenFileHandles();
+		LONGLONG MinSize = LLONG_MAX;
+		if (OpenFiles.size() == 0) return 0;
+		if (OpenFiles.size() == 1) {
+			LARGE_INTEGER File;
+			GetFileSizeEx(OpenFiles[0].second.second, &File);
+			return File.QuadPart;
+		}
+		for (int i = 0; i < OpenFiles.size() - 1; i++) {
+			LARGE_INTEGER FirstFile, SecondFile;
+			GetFileSizeEx(OpenFiles[i].second.second, &FirstFile);
+			GetFileSizeEx(OpenFiles[i + 1].second.second, &SecondFile);
+			LONGLONG NewMin = min(FirstFile.QuadPart, SecondFile.QuadPart);
+			if (NewMin < MinSize) MinSize = NewMin;
+
+		}
+		return MinSize;
 	}
 
 	// Функция обновляет параметры текущего шрифта и сохраняет их в переменной класса
@@ -133,15 +139,6 @@ public:
 		return m_CharOnScreen;
 	}
 
-	// Функция возвращает размер файла, открытго в левом окне
-	LARGE_INTEGER ReturnLeftFileSize() 
-	{
-		return m_LeftFileSize;
-	}
-	// Функция возвращает размер файла, открытого в правом окне
-	LARGE_INTEGER ReturnRightFileSize() {
-		return m_RightFileSize;
-	}
 	
 	LONGLONG  m_ScrollVerticalOffset; // Текущий оффсет вертикальной полосы прокрутки
 	LONG m_ScrollHorizontalOffset;	  // Текущий оффсет горизонтальной полосы прокрутки
@@ -149,8 +146,6 @@ public:
 
 private:
 	DWORD m_Granularity; // Гранулярность системы
-	LARGE_INTEGER m_LeftFileSize; //Размер файла открытого в левом окне
-	LARGE_INTEGER m_RightFileSize; //Размер файла открытого в правом окне
 	TEXTMETRIC m_TextMetric; // Параметры выбранного шрифта
 	LONG m_Strings_on_screen; // Целое колличество строк которое может поместиться на экране
 	LONG m_CharOnScreen; // Целое колличество символов которое может поместиться на экране
