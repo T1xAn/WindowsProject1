@@ -39,6 +39,24 @@ public:
 		return TRUE;
 	}
 
+	BOOL GenerateKey(char* key) {
+		BOOL flag = FALSE;
+		srand(time(NULL));
+		 char alphanum[] =
+				"0123456789"
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				"abcdefghijklmnopqrstuvwxyz";
+
+		while (1) {
+
+			for (int i = 0; i < 10; i++) {
+				key[i] = alphanum[rand() % strlen((char*)alphanum)];
+			}
+
+			if (FindWindowWithKey(key) == -1)
+				return TRUE;
+		}
+	}
 
 	BOOL AddUpdatingWindows(HWND Window, char* WindowKey) {
 		m_UpdatingWindowsKeys.push_back(WindowKey);

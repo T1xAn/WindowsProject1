@@ -5,7 +5,7 @@
 #include "WindowsProject1.h"
 #include "Functions_elements.h"
 #define MAX_LOADSTRING 100
-#define NUMBER_OF_WINDOWS 2
+
 
 DWORD error;
 
@@ -78,44 +78,62 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         RECT rect;
         GetClientRect(hWnd, &rect);
         int screen_height = GetSystemMetrics(SM_CYSCREEN);
-        HWND WindowLeft  = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
+   /*     HWND WindowLeft  = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(),NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
-            0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
+            0, ceil(rect.bottom*0.1), rect.right / 2, ceil(rect.bottom*0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);*/
 
-        LeftWindowInfo->SetWindowHandle(WindowLeft);
-        LeftWindowInfo->SetWindowKey((char*)"LeftWindow");
-        SetWindowLongPtr(WindowLeft, GWLP_USERDATA, (LONG_PTR)LeftWindowInfo);
-        Comparator.AddUpdatingWindows(WindowLeft, (char*)"LeftWindow");
-        MainWindowInfo->AddChildWindows(WindowLeft, (char*) "LeftWindow");
+        //LeftWindowInfo->SetWindowHandle(WindowLeft);
+        //LeftWindowInfo->SetWindowKey((char*)"LeftWindow");
+        //SetWindowLongPtr(WindowLeft, GWLP_USERDATA, (LONG_PTR)LeftWindowInfo);
+        //Comparator.AddUpdatingWindows(WindowLeft, (char*)"LeftWindow");
+        //MainWindowInfo->AddChildWindows(WindowLeft, (char*) "LeftWindow");
 
        HWND ToolBarWindow = CreateWindowW((LPCWSTR)WindowInfo.GetToolBarClass(), NULL, WS_CHILD | WS_BORDER, 0, 0,
             rect.right, ceil(rect.bottom*0.1), hWnd, nullptr, WindowInfo.hInst, nullptr);
 
        MainWindowInfo->AddChildWindows(ToolBarWindow, (char*) "ToolBarWindow");
 
-       HWND WindowRight = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
+       /*HWND WindowRight = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
             , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
-            rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
+            rect.right/2, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);*/
 
-       RightWindowInfo->SetWindowHandle(WindowRight);
+      /* RightWindowInfo->SetWindowHandle(WindowRight);
        RightWindowInfo->SetWindowKey((char*)"RightWindow");
        SetWindowLongPtr(WindowRight,GWLP_USERDATA,(LONG_PTR)RightWindowInfo);
        Comparator.AddUpdatingWindows(WindowRight, (char*)"RightWindow");
-       MainWindowInfo->AddChildWindows(WindowRight, (char*)"RightWindow");
+       MainWindowInfo->AddChildWindows(WindowRight, (char*)"RightWindow");*/
       
-       SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)MainWindowInfo);
+      
 
        Comparator.AddWindows(hWnd);
-       Comparator.AddWindows(WindowLeft);
-       Comparator.AddWindows(WindowRight);
+      /* Comparator.AddWindows(WindowLeft);
+       Comparator.AddWindows(WindowRight);*/
        Comparator.AddWindows(ToolBarWindow);
 
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
         ScrolledFilesInfo.GetTextMetric(hWnd, FONT);
 
-        ///
-        Comparator.AddNewOpendFile((char*)"ToolBarWindow", NULL, NULL);
-        ///
+        for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
+            cWindowInfo* CurrentWindowInfo = new cWindowInfo;
+
+            HWND WindowHWND = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
+                , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
+                0, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
+            char* Key = (char*)calloc(50, sizeof(char));
+            Comparator.GenerateKey(Key);
+            CurrentWindowInfo->SetWindowHandle(WindowHWND);
+            CurrentWindowInfo->SetWindowKey(Key);
+            SetWindowLongPtr(WindowHWND, GWLP_USERDATA, (LONG_PTR)CurrentWindowInfo);
+            char keyF[50];
+            strcpy_s(keyF, 50, Key);
+            Comparator.AddUpdatingWindows(WindowHWND, keyF);
+            MainWindowInfo->AddChildWindows(WindowHWND, keyF);
+            free(Key);
+            Comparator.AddWindows(WindowHWND);
+
+        }
+
+        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)MainWindowInfo);
 
         std::vector <HWND> Update = Comparator.ReturnUpdatingWindows();
 
@@ -133,10 +151,16 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         
         int Screen_height = GetSystemMetrics(SM_CYFULLSCREEN);
         int Menu_height = GetSystemMetrics(SM_CYMENUSIZE);
+        auto childWindows = MainWindow->ReturnChildWindows();
+        int left_offset = 0;
+        for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
 
-        MoveWindow(MainWindow->FindChildWindow((char*)"LeftWindow"), 0, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
+            MoveWindow(childWindows[count+1].second, left_offset, ceil((Screen_height - Menu_height) * 0.1), rc.right / NUMBER_OF_WINDOWS, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
+            left_offset += rc.right / NUMBER_OF_WINDOWS +1;
+        }
+        //MoveWindow(MainWindow->FindChildWindow((char*)"LeftWindow"), 0, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
         MoveWindow(MainWindow->FindChildWindow((char*)"ToolBarWindow"), 0, 0, rc.right, ceil((Screen_height - Menu_height) * 0.1), TRUE);
-        MoveWindow(MainWindow->FindChildWindow((char*)"RightWindow"), rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
+        //MoveWindow(MainWindow->FindChildWindow((char*)"RightWindow"), rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
         break;
     }
     case WM_COMMAND:

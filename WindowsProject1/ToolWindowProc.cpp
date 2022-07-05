@@ -52,6 +52,21 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, hWnd, (HMENU)IDB_ListBox, WindowInfo.hInst, nullptr);
         CurrentWindowInfo->AddChildWindows(List, (char*)"List");
 
+        //for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
+        //    HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
+        //        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, 20, hWnd, NULL, NULL, NULL);
+            char* Key = (char*)calloc(50, sizeof(char));
+        //    Comparator.GenerateKey(Key);
+        //    char keyF[50];
+        //    strcpy_s(keyF, 50, Key);
+        //    CurrentWindowInfo->AddChildWindows(TextBox, keyF);
+        ZeroMemory(Key, sizeof(Key));
+        //    HWND LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
+        //        WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 4, 1, ceil(rect.right * 0.01 + sc),
+        //        20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
+        //    CurrentWindowInfo->AddChildWindows(LeftSearch, (char*)"LeftSearch");
+
+        //}
       /*  HWND OpenNewWindow = CreateWindowA("button", "Сравнить", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);*/
 
