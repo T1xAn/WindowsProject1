@@ -21,27 +21,27 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         CurrentWindowInfo->SetWindowHandle(hWnd);
         CurrentWindowInfo->SetWindowKey((char*)"ToolBarWindow");
         
-      HWND LeftTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
+     /* HWND LeftTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
             WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, 20, hWnd, NULL, NULL, NULL);
     CurrentWindowInfo->AddChildWindows(LeftTextBox, (char*)"LeftTextBox");
 
         HWND LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
             WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 4, 1, ceil(rect.right * 0.01 + sc),
             20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
-        CurrentWindowInfo->AddChildWindows(LeftSearch, (char*)"LeftSearch");
+        CurrentWindowInfo->AddChildWindows(LeftSearch, (char*)"LeftSearch");*/
 
        HWND ReadButton = CreateWindowA("button", "Сравнить", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);
       CurrentWindowInfo->AddChildWindows(ReadButton, (char*)"ReadButton");
 
-      HWND RightTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboServer\\TurboServer.vdi"),
-            WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
-      CurrentWindowInfo->AddChildWindows(RightTextBox, (char*)"RightTextBox");
-      
-      HWND RightSearch = CreateWindowA("button", ">>", WS_CHILD |
-            WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
-            hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
-      CurrentWindowInfo->AddChildWindows(RightSearch, (char*)"RightSearch");
+      //HWND RightTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboServer\\TurboServer.vdi"),
+      //      WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
+      //CurrentWindowInfo->AddChildWindows(RightTextBox, (char*)"RightTextBox");
+      //
+      //HWND RightSearch = CreateWindowA("button", ">>", WS_CHILD |
+      //      WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
+      //      hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
+      //CurrentWindowInfo->AddChildWindows(RightSearch, (char*)"RightSearch");
 
        HWND ChangeFont = CreateWindowA("button", "WORK IN PRIGRESS", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 0, 0, 0, 0,
@@ -52,23 +52,29 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, hWnd, (HMENU)IDB_ListBox, WindowInfo.hInst, nullptr);
         CurrentWindowInfo->AddChildWindows(List, (char*)"List");
 
-        //for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
-        //    HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
-        //        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, 20, hWnd, NULL, NULL, NULL);
+        for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
+            HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
+                WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, NULL, NULL, NULL);
             char* Key = (char*)calloc(50, sizeof(char));
-        //    Comparator.GenerateKey(Key);
-        //    char keyF[50];
-        //    strcpy_s(keyF, 50, Key);
-        //    CurrentWindowInfo->AddChildWindows(TextBox, keyF);
-        ZeroMemory(Key, sizeof(Key));
-        //    HWND LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
-        //        WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 4, 1, ceil(rect.right * 0.01 + sc),
-        //        20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
-        //    CurrentWindowInfo->AddChildWindows(LeftSearch, (char*)"LeftSearch");
+            Comparator.GenerateKey(Key);
+          /*  char keyF[50];
+            strcpy_s(keyF, 50, Key);*/
+            CurrentWindowInfo->AddChildWindows(TextBox, Key);
+            Comparator.AddButtonsAndTextBox(Key, TextBox);
 
-        //}
-      /*  HWND OpenNewWindow = CreateWindowA("button", "Сравнить", WS_CHILD |
-            WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);*/
+            char* KeyB = (char*)calloc(50, sizeof(char));
+
+        Comparator.GenerateKey(KeyB);
+       // strcpy_s(keyF, 50, Key);
+            HWND Search = CreateWindowA("button", ">>", WS_CHILD |
+                WS_VISIBLE | WS_BORDER, 0, 0, 0,
+                0, hWnd, NULL, WindowInfo.hInst, nullptr);
+            CurrentWindowInfo->AddChildWindows(Search, KeyB);
+            Comparator.AddButtonsAndTextBox(KeyB, Search);
+
+           // free(Key);
+
+        }
 
         Comparator.AddWindows(List);
 
@@ -89,10 +95,17 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         cWindowInfo *CurrentWindowInfo = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
         int sc = GetSystemMetrics(SM_CXVSCROLL);
-        MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"LeftTextBox"), 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, ceil(rect.bottom * 0.33), TRUE);
-        MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"LeftSearch"), ceil(rect.right / 2 - rect.right * 0.01 - sc) - 4, 1, ceil(rect.right * 0.01 + sc), ceil(rect.bottom * 0.33), TRUE);
-        MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"RightTextBox"), rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), ceil(rect.bottom * 0.33), TRUE);
-        MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"RightSearch"), ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), ceil(rect.bottom * 0.33), TRUE);
+
+        std::vector <char*> ButtonsAndTextBox = Comparator.ReturnButtonTextBoxkeys();
+        int left_offset = 1;
+        for (int count = 0; count/2 < NUMBER_OF_WINDOWS; count+=2) {
+            MoveWindow(CurrentWindowInfo->FindChildWindow(ButtonsAndTextBox[count]), left_offset, 1, (rect.right / NUMBER_OF_WINDOWS) - ((rect.right / NUMBER_OF_WINDOWS)*0.125), ceil(rect.bottom * 0.33), TRUE);
+            left_offset += (rect.right / NUMBER_OF_WINDOWS) - ((rect.right / NUMBER_OF_WINDOWS) * 0.125)+1;
+            MoveWindow(CurrentWindowInfo->FindChildWindow(ButtonsAndTextBox[count+1]), left_offset, 1, (rect.right / NUMBER_OF_WINDOWS) * 0.125, ceil(rect.bottom * 0.33), TRUE);
+            left_offset += (rect.right / NUMBER_OF_WINDOWS) * 0.125+1;
+        }
+       /* MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"RightTextBox"), rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), ceil(rect.bottom * 0.33), TRUE);
+        MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"RightSearch"), ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), ceil(rect.bottom * 0.33), TRUE);*/
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"ReadButton"), 1, ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33), TRUE);
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"ChangeFont"), 1, (ceil(rect.bottom * 0.33) + 1) * 2, ceil(rect.right * 0.2), ceil(rect.bottom * 0.3), TRUE);
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"List"), ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.66) + 1, TRUE);
@@ -107,6 +120,13 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wmId)
         {
 
+
+        case BN_CLICKED: {
+            if (Comparator.CheckUpdatingWindows()) {
+                //MessageBox(hWnd, L"Да", L"Нет", MB_OK | MB_ICONEXCLAMATION);
+            }
+            break;
+        }
         case IDB_SearchButton_Left: {
             OPENFILENAMEW File;
             File = buttonGetFile();

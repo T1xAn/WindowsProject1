@@ -124,11 +124,11 @@ LRESULT CALLBACK WndProc(HWND hWnd,
             CurrentWindowInfo->SetWindowHandle(WindowHWND);
             CurrentWindowInfo->SetWindowKey(Key);
             SetWindowLongPtr(WindowHWND, GWLP_USERDATA, (LONG_PTR)CurrentWindowInfo);
-            char keyF[50];
-            strcpy_s(keyF, 50, Key);
-            Comparator.AddUpdatingWindows(WindowHWND, keyF);
-            MainWindowInfo->AddChildWindows(WindowHWND, keyF);
-            free(Key);
+         /*   char keyF[50];
+            strcpy_s(keyF, 50, Key);*/
+            Comparator.AddUpdatingWindows(WindowHWND, (char*)Key);
+            MainWindowInfo->AddChildWindows(WindowHWND, (char*)Key);
+            //free(Key);
             Comparator.AddWindows(WindowHWND);
 
         }

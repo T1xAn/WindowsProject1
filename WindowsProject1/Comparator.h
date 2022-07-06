@@ -160,6 +160,7 @@ public:
 				SendNotifyMessage(m_UpdatingWindows[key], WM_PAINT, 0, 0);
 		}
 	}
+
 	BOOL AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
 
 		int key = FindWindowWithKey(WindowKey);
@@ -240,9 +241,26 @@ public:
 		return TRUE;
 	}
 
+	BOOL CheckUpdatingWindows() {
+		if (m_UpdatingWindows.size() == 0) return FALSE;
+			return TRUE;
+	}
+
+	BOOL AddButtonsAndTextBox(char* Key, HWND Window) {
+		m_ButtonsAndTextBox.push_back( Window );
+		m_ButtonsAndTextBoxKeys.push_back(Key);
+		return TRUE;
+	}
+	
+	std::vector <char*> ReturnButtonTextBoxkeys() {
+		return m_ButtonsAndTextBoxKeys;
+	}
+
 private:
 	std::vector <char*> m_UpdatingWindowsKeys;
 	std::vector <HWND> m_UpdatingWindows;
 	std::vector <std::pair <int, std::pair<HANDLE, HANDLE>>> m_OpendFiles;
 	std::vector <HWND> m_allWindows;
+	std::vector <HWND> m_ButtonsAndTextBox;
+	std::vector <char*> m_ButtonsAndTextBoxKeys;
 };
