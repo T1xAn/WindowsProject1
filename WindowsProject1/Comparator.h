@@ -12,14 +12,31 @@ public:
 
 	}
 
-	int FindWindowWithKey(char* WindowKey) {
+	int FindWindowsWithHWND(HWND Window, BOOL FindTextBoxAndButtons) {
 		int key = 0;
-		for (key; key < m_UpdatingWindowsKeys.size(); key++) {
-			if (WindowKey == m_UpdatingWindowsKeys[key])
+		std::vector <HWND> Windows = m_UpdatingWindows;
+		if (FindTextBoxAndButtons)
+			Windows = m_ButtonsAndTextBox;
+		for (key; key < Windows.size(); key++) {
+			if (Window == Windows[key])
 				return key;
 		}
 
-		if (key == m_UpdatingWindowsKeys.size())
+		if (key == Windows.size())
+			return -1;
+	}
+
+	int FindWindowWithKey(char* WindowKey, BOOL FindTextBoxAndButtons) {
+		int key = 0;
+		std::vector <char*> Windows = m_UpdatingWindowsKeys;
+		if (FindTextBoxAndButtons)
+			Windows = m_ButtonsAndTextBoxKeys;
+		for (key; key < Windows.size(); key++) {
+			if (WindowKey == Windows[key])
+				return key;
+		}
+
+		if (key == Windows.size())
 			return -1;
 	}
 
@@ -39,9 +56,10 @@ public:
 		return TRUE;
 	}
 
-	BOOL GenerateKey(char* key) {
+	BOOL GenerateKey(char* key, BOOL WindowsType) {
 		BOOL flag = FALSE;
-		srand(time(NULL));
+		//Sleep(1000);
+		//srand(time(NULL));
 		 char alphanum[] =
 				"0123456789"
 				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -53,7 +71,7 @@ public:
 				key[i] = alphanum[rand() % strlen((char*)alphanum)];
 			}
 
-			if (FindWindowWithKey(key) == -1)
+			if (FindWindowWithKey(key, WindowsType) == -1)
 				return TRUE;
 		}
 	}
@@ -65,7 +83,7 @@ public:
 	}
 
 	BOOL UpdateKeyWindow(char* WindowKey) {
-		int key = FindWindowWithKey(WindowKey);
+		int key = FindWindowWithKey(WindowKey, FALSE);
 		if (key == -1)
 			return FALSE;
 
@@ -144,7 +162,7 @@ public:
 			return TRUE;
 		}
 		else if (WindowKey != NULL) {
-			int key = FindWindowWithKey(WindowKey);
+			int key = FindWindowWithKey(WindowKey, FALSE);
 			if (key == -1)
 				return FALSE;
 
@@ -163,7 +181,7 @@ public:
 
 	BOOL AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
 
-		int key = FindWindowWithKey(WindowKey);
+		int key = FindWindowWithKey(WindowKey,FALSE);
 		if (key == -1)
 			return FALSE;
 
@@ -181,7 +199,7 @@ public:
 
 	BOOL DeleteOpenFileHandle(char* WindowKey) {
 
-		int key = FindWindowWithKey(WindowKey);
+		int key = FindWindowWithKey(WindowKey,FALSE);
 		if (key == -1)
 			return FALSE;
 
@@ -211,16 +229,16 @@ public:
 
 		if (m_OpendFiles.size() == 0)
 			return FALSE;
-
-		for (int i = 0; i < 2; i++) {
-			int key = 0;
+		int key = 0;
+		while(1) {
+			/*int key = 0;
 			while (i != m_OpendFiles[key].first) {
 				key++;
 				if (key > m_OpendFiles.size() - 1)
 					break;
-			}
+			}*/
 
-			if (key <= m_OpendFiles.size() - 1) {
+			
 				if (m_OpendFiles[key].second.first != NULL) {
 					CloseHandle(m_OpendFiles[key].second.first);
 					cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[m_OpendFiles[key].first], GWLP_USERDATA);
@@ -235,7 +253,7 @@ public:
 				m_OpendFiles.erase(iterator);
 
 				if (m_OpendFiles.size() == 0) return TRUE;
-			}
+				//key++;
 		}
 
 		return TRUE;
@@ -254,6 +272,10 @@ public:
 	
 	std::vector <char*> ReturnButtonTextBoxkeys() {
 		return m_ButtonsAndTextBoxKeys;
+	}
+
+	std::vector <char*> ReturnUpdatingWindowsKeys() {
+		return m_UpdatingWindowsKeys;
 	}
 
 private:

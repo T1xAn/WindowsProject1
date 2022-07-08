@@ -24,6 +24,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
     
+    srand(time(NULL));
+
     WindowInfo.RegisterStrings(hInstance);
     WindowInfo.RegisterWindowClasses(hInstance);
 
@@ -112,7 +114,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 
         HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
         ScrolledFilesInfo.GetTextMetric(hWnd, FONT);
-
+        //srand(time(NULL));
         for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
             cWindowInfo* CurrentWindowInfo = new cWindowInfo;
 
@@ -120,7 +122,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
                 , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
                 0, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
             char* Key = (char*)calloc(50, sizeof(char));
-            Comparator.GenerateKey(Key);
+            Comparator.GenerateKey(Key,FALSE);
             CurrentWindowInfo->SetWindowHandle(WindowHWND);
             CurrentWindowInfo->SetWindowKey(Key);
             SetWindowLongPtr(WindowHWND, GWLP_USERDATA, (LONG_PTR)CurrentWindowInfo);

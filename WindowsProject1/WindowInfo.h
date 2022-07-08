@@ -86,6 +86,10 @@
 			return m_FileSize;
 		}
 
+		std::vector<std::pair <char*, HWND>> ReturnAllChildWindows() {
+			return m_ChildWindows;
+		}
+
 	private:
 		HWND m_Window;
 		HANDLE m_File;
