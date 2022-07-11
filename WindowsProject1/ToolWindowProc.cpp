@@ -20,28 +20,10 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         cWindowInfo* CurrentWindowInfo = new cWindowInfo;
         CurrentWindowInfo->SetWindowHandle(hWnd);
         CurrentWindowInfo->SetWindowKey((char*)"ToolBarWindow");
-        
-     /* HWND LeftTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
-            WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 1, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 5, 20, hWnd, NULL, NULL, NULL);
-    CurrentWindowInfo->AddChildWindows(LeftTextBox, (char*)"LeftTextBox");
-
-        HWND LeftSearch = CreateWindowA("button", ">>", WS_CHILD |
-            WS_VISIBLE | WS_BORDER, ceil(rect.right / 2 - rect.right * 0.01 - sc) - 4, 1, ceil(rect.right * 0.01 + sc),
-            20, hWnd, (HMENU)IDB_SearchButton_Left, WindowInfo.hInst, nullptr);
-        CurrentWindowInfo->AddChildWindows(LeftSearch, (char*)"LeftSearch");*/
 
        HWND ReadButton = CreateWindowA("button", "Сравнить", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 750, 20, 30, 30, hWnd, (HMENU)IDB_ReadButton, WindowInfo.hInst, nullptr);
       CurrentWindowInfo->AddChildWindows(ReadButton, (char*)"ReadButton");
-
-      //HWND RightTextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\XP\\TurboServer\\TurboServer.vdi"),
-      //      WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rect.right / 2, 1, ceil(rect.right / 2 - rect.right * 0.01 - sc), 20, hWnd, NULL, NULL, NULL);
-      //CurrentWindowInfo->AddChildWindows(RightTextBox, (char*)"RightTextBox");
-      //
-      //HWND RightSearch = CreateWindowA("button", ">>", WS_CHILD |
-      //      WS_VISIBLE | WS_BORDER, ceil(rect.right - rect.right * 0.01 - sc) + 1, 1, ceil(rect.right * 0.01 + sc), 20,
-      //      hWnd, (HMENU)IDB_SearchButton_Right, WindowInfo.hInst, nullptr);
-      //CurrentWindowInfo->AddChildWindows(RightSearch, (char*)"RightSearch");
 
        HWND ChangeFont = CreateWindowA("button", "WORK IN PRIGRESS", WS_CHILD |
             WS_VISIBLE | WS_BORDER, 0, 0, 0, 0,
@@ -54,26 +36,25 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         
         for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
-            HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT("D:\\BFF.rar"),
+            HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), NULL,
                 WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, NULL, NULL, NULL);
             char* Key = (char*)calloc(50, sizeof(char));
             Comparator.GenerateKey(Key,TRUE);
-          /*  char keyF[50];
-            strcpy_s(keyF, 50, Key);*/
+
             CurrentWindowInfo->AddChildWindows(TextBox, Key);
             Comparator.AddButtonsAndTextBox(Key, TextBox);
 
             char* KeyB = (char*)calloc(50, sizeof(char));
 
         Comparator.GenerateKey(KeyB, TRUE);
-       // strcpy_s(keyF, 50, Key);
+
             HWND Search = CreateWindowA("button", ">>", WS_CHILD |
                 WS_VISIBLE | WS_BORDER, 0, 0, 0,
                 0, hWnd, NULL, WindowInfo.hInst, nullptr);
             CurrentWindowInfo->AddChildWindows(Search, KeyB);
             Comparator.AddButtonsAndTextBox(KeyB, Search);
 
-           // free(Key);
+        
 
         }
 
@@ -166,7 +147,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             if (!OpendFlag) {
-                MessageBox(hWnd, L"Все файлы не были открыты", L" Ошибка ", MB_OK | MB_ICONERROR);
+                MessageBox(hWnd, L"Ни один файл не был открыт", L" Ошибка ", MB_OK | MB_ICONERROR);
                 break;
             }
 

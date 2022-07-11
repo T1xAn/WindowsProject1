@@ -58,8 +58,6 @@ public:
 
 	BOOL GenerateKey(char* key, BOOL WindowsType) {
 		BOOL flag = FALSE;
-		//Sleep(1000);
-		//srand(time(NULL));
 		 char alphanum[] =
 				"0123456789"
 				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -217,11 +215,11 @@ public:
 		return FALSE;
 	}
 	
-	cWindowInfo* FindOtherComparableFile(HWND CurrentWindow) {
-		for (int i = 0; i < 2; i++) {
-			if (CurrentWindow != m_UpdatingWindows[i])
-				return (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[i], GWLP_USERDATA);
-		}
+	cWindowInfo* FindOtherComparableFile(HWND CurrentWindow, int TryNumber) {
+		
+			if (CurrentWindow != m_UpdatingWindows[TryNumber])
+				return (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[TryNumber], GWLP_USERDATA);
+
 		return NULL;
 	}
 
@@ -231,13 +229,6 @@ public:
 			return FALSE;
 		int key = 0;
 		while(1) {
-			/*int key = 0;
-			while (i != m_OpendFiles[key].first) {
-				key++;
-				if (key > m_OpendFiles.size() - 1)
-					break;
-			}*/
-
 			
 				if (m_OpendFiles[key].second.first != NULL) {
 					CloseHandle(m_OpendFiles[key].second.first);

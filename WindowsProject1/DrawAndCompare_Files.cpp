@@ -121,8 +121,8 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
     Offset *= BytesOnString;
 
     DWORDLONG i = Offset;
-
-    if (ScrolledFilesInfo.ReturnSmallestFile() <= Offset) return DrawDC;
+    LONGLONG SmallestFile = min(WindowFileSize, ComparableFileSize);
+    if (SmallestFile <= Offset) return DrawDC;
 
     Offset = (Offset / Granularity);
     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
@@ -165,14 +165,14 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
     i -= Offset;
     for (int count = 0; count < Strings_On_Screen; count++) {
         for (int HexCount = HexOffset; HexCount < BytesOnString; HexCount++) {
-            if (WINDOWRFILE[i + HexCount] == COMPARABLERFILE[i + HexCount]) {
+            if (WINDOWRFILE[i + HexCount] != COMPARABLERFILE[i + HexCount]) {
                 snprintf(BufferString, sizeof(BufferString), " %02X", WINDOWRFILE[i + HexCount]);
                 TextOutA(DrawDC, 5 + 3 * SingleChar * (HexCount - HexOffset) + HorizontalOffsetMain * SingleChar, height, BufferString, strlen(BufferString));
             }
         }
         BufferString[0] = '\0';
         for (int CharCount = CharOffset; CharCount < BytesOnString; CharCount++) {
-            if (WINDOWRFILE[i + CharCount] == COMPARABLERFILE[i + CharCount]) {
+            if (WINDOWRFILE[i + CharCount] != COMPARABLERFILE[i + CharCount]) {
                 snprintf(BufferString, sizeof(BufferString), " %C", WINDOWRFILE[i + CharCount]);
                 TextOutA(DrawDC, 5 + 5 + 2 * SingleChar * (CharCount - CharOffset) + HorizontalOffsetMain * SingleChar + PreCharOffset + 3 * SingleChar * (BytesOnString - HexOffset), height, BufferString, strlen(BufferString));
             }
@@ -180,7 +180,7 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
         }
 
         i += BytesOnString;
-        if (ScrolledFilesInfo.ReturnSmallestFile() <= i) return DrawDC;
+        if (SmallestFile <= i) return DrawDC;
         height += TextMetric.tmHeight;
 
         if (i == Granularity) {
@@ -200,7 +200,7 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
             i = 0;
             Block = temp;
             height += TextMetric.tmHeight;
-            if (ScrolledFilesInfo.ReturnSmallestFile() <= Offset) return DrawDC;
+            if (SmallestFile <= Offset) return DrawDC;
         }
 
     }
