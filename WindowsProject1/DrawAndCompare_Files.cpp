@@ -80,7 +80,7 @@ HDC GetEightBitsHex(_In_ HWND Window, _In_ HANDLE File, _In_ DWORD Granularity, 
 
         int CharOffset = 0;
         for (int j = HexOffset; j < BytesOnString; j++) {
-            if (LRFILE[i + j] == '\0') {
+            if (LRFILE[i + j] == '\r' && LRFILE[i + j+1] == '\n') {
                 CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
                 continue;
             }
@@ -173,14 +173,20 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
         BufferString[0] = '\0';
         for (int CharCount = CharOffset; CharCount < BytesOnString; CharCount++) {
             if (WINDOWRFILE[i + CharCount] != COMPARABLERFILE[i + CharCount]) {
-                snprintf(BufferString, sizeof(BufferString), " %C", WINDOWRFILE[i + CharCount]);
-                TextOutA(DrawDC, 5 + 5 + 2 * SingleChar * (CharCount - CharOffset) + HorizontalOffsetMain * SingleChar + PreCharOffset + 3 * SingleChar * (BytesOnString - HexOffset), height, BufferString, strlen(BufferString));
+                if (WINDOWRFILE[i + CharCount] == '\r' && WINDOWRFILE[i + CharCount + 1] == '\n') {
+                    continue;
+                }
+                else {
+                    snprintf(BufferString, sizeof(BufferString), " %C", WINDOWRFILE[i + CharCount]);
+                    TextOutA(DrawDC, 5 + 5 + 2 * SingleChar * (CharCount - CharOffset) + HorizontalOffsetMain * SingleChar +
+                        PreCharOffset + 3 * SingleChar * (BytesOnString - HexOffset), height, BufferString, strlen(BufferString));
+                }
             }
 
         }
 
         i += BytesOnString;
-        if (SmallestFile <= i) return DrawDC;
+        if (SmallestFile <= (i + Offset)) return DrawDC;
         height += TextMetric.tmHeight;
 
         if (i == Granularity) {
@@ -205,4 +211,114 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
 
     }
     return DrawDC;
+}
+
+void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSET, _In_ LONG BytesOnString, HWND Window) {
+     int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+
+     size_t HeapPartSize = BytesOnString * Strings_On_Screen + 1;
+
+    char* BufferString = (char*)HeapAlloc(ScrolledFilesInfo.ReturnLocalHeap(), 0, HeapPartSize);
+
+    DWORD Block = Granularity, height = 1;
+    OFFSET *= BytesOnString;
+    DWORDLONG i = OFFSET;
+    OFFSET = (OFFSET / Granularity);
+    
+    TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
+
+    OFFSET *= Granularity;
+    DWORD HighOffset = ((OFFSET >> 32) & 0xFFFFFFFFul);
+    DWORD LowOffset = static_cast<DWORD>(OFFSET & 0xFFFFFFFFul);
+
+    if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
+    PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
+    int CharOffset = 0;
+    Block = Strings_On_Screen;
+    i -= OFFSET;
+
+    for (int count = 0; count < Block; count++) {
+       
+        for (int j = 0; j < BytesOnString; j++) {
+            CharOffset += snprintf (BufferString + CharOffset, HeapPartSize - CharOffset, "%C", LRFILE[i + j]);
+        }
+
+
+        i += BytesOnString;
+
+        if (i == Granularity) {
+            UnmapViewOfFile(LRFILE);
+            int temp = Block;
+            Block = Granularity;
+            OFFSET = (((OFFSET / Granularity) + 1) * Granularity);
+            DWORD HighOffset = ((OFFSET >> 32) & 0xFFFFFFFFul);
+            DWORD LowOffset = static_cast<DWORD>(OFFSET & 0xFFFFFFFFul);
+            if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
+            PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
+            i = 0;
+            Block = temp;
+        }
+       
+    }
+    Comparator.AddPage(BufferString, Window);
+        return;
+}
+
+BOOL CompareAllFiles() {
+
+    std::vector <std::pair <int, std::pair <HANDLE, HANDLE>>> ComparableFiles = Comparator.ReturnOpenFileHandles();
+
+    DWORD Block = ScrolledFilesInfo.ReturnGranularity();
+    for (int FileCount = 0; FileCount < Comparator.ReturnOpenFileHandles().size(); FileCount++) {
+
+        HANDLE FirstFile = ComparableFiles[FileCount].second.first;
+
+        for (int ComparableFileCount = 0; ComparableFileCount < Comparator.ReturnOpenFileHandles().size(); ComparableFileCount++) {
+
+            if (FirstFile == ComparableFiles[ComparableFileCount].second.first) continue;
+
+            HANDLE SecondFile = ComparableFiles[ComparableFileCount].second.first;
+            
+
+           
+           cWindowInfo* FirstWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[FileCount].first), GWLP_USERDATA);
+           LARGE_INTEGER FirstFileSize = FirstWindow->ReturnFileSize();
+           cWindowInfo* SecondWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[ComparableFileCount].first), GWLP_USERDATA);
+           LARGE_INTEGER SecondFileSize = SecondWindow->ReturnFileSize();
+
+
+           PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ,0, 0, Block);
+           PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, 0, 0, Block);
+
+           LONGLONG MainOffset = 0;
+
+           DWORD GranOffset = 0;
+           while (MainOffset + GranOffset < min(FirstFileSize.QuadPart, SecondFileSize.QuadPart)) {
+               if (FRFILE[GranOffset] != SRFILE[GranOffset])
+                   if(Comparator.FindDifferences((MainOffset + GranOffset)))
+                   Comparator.AddDifferences((MainOffset + GranOffset));
+               GranOffset++;
+                   if (GranOffset == Block) {
+                       UnmapViewOfFile(FRFILE);
+                       UnmapViewOfFile(SRFILE);
+                       int temp = Block;
+                       DWORD Granularity = ScrolledFilesInfo.ReturnGranularity();
+                       Block = Granularity;
+                       MainOffset = (((MainOffset / Granularity) + 1) * Granularity);
+                       DWORD HighOffset = ((MainOffset >> 32) & 0xFFFFFFFFul);
+                       DWORD LowOffset = static_cast<DWORD>(MainOffset & 0xFFFFFFFFul);
+                       if (Block > FirstFileSize.QuadPart - MainOffset) Block = FirstFileSize.QuadPart - MainOffset;
+                       PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+
+                       Block = Granularity;
+                       if (Block > SecondFileSize.QuadPart - MainOffset) Block = SecondFileSize.QuadPart - MainOffset;
+                       PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+                       GranOffset = 0;
+                       Block = temp;
+                   }
+           }
+               
+        }
+    }
+    return TRUE;
 }

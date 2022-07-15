@@ -33,13 +33,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     if (!WindowInfo.CreateAllWindow(hInstance, nCmdShow))
         return FALSE;
 
-    ScrolledFilesInfo.GetSystemGranularity();
+  DWORD PageSize = ScrolledFilesInfo.GetSystemGranularity();
  
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
 
     MSG msg;
-  
+
+   //SIZE_T a = sizeof(char*) * ((ScrolledFilesInfo.ReturnGranularity() / 2) * NUMBER_OF_WINDOWS + 50);
+
+      HANDLE newHeap = HeapCreate(NULL, PageSize, PageSize*NUMBER_OF_WINDOWS);
+      ScrolledFilesInfo.GetLocalHeap(newHeap);
+
     // Цикл основного сообщения:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -50,6 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
+    HeapDestroy(ScrolledFilesInfo.ReturnLocalHeap());
     return (int) msg.wParam;
 }
 

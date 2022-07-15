@@ -153,7 +153,6 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             ScrollHorizontalButtonPos = min(50, ScrollHorizontalButtonPos);
 
             SetScrollPos(hWnd, SB_HORZ, ScrollHorizontalButtonPos, TRUE);
-
             Comparator.SendWMPaintMessage(hWnd);
 
         }
@@ -179,19 +178,25 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
         cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
         LARGE_INTEGER CurrentFileSize = CurrentWindow->ReturnFileSize();
-        HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE();
+        HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE(); 
+
+        Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
 
         if (CurrentFile != NULL) {
+            //ReadPage(CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart, ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);
+            ///CompareAllFiles();
+        }
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        hdc = GetDC(hWnd);
+        HDC BlitHDC = CreateCompatibleDC(hdc);
+        HBITMAP BitMap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+        SelectObject(BlitHDC, BitMap);
 
-            RECT rc;
-            GetClientRect(hWnd, &rc);
-            hdc = GetDC(hWnd);
-            HDC BlitHDC = CreateCompatibleDC(hdc);
-            HBITMAP BitMap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-            SelectObject(BlitHDC, BitMap);
+        DeleteObject(BitMap);
+        BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
 
-            DeleteObject(BitMap);
-            BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
+        if (CurrentFile != NULL) {
 
             BlitHDC = GetEightBitsHex(hWnd, CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart,
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);
@@ -208,9 +213,9 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     }
                 }
             }
-            BitBlt(hdc, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, SRCCOPY);
-            DeleteDC(BlitHDC);
         }
+        BitBlt(hdc, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, SRCCOPY);
+        DeleteDC(BlitHDC);
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC..
         EndPaint(hWnd, &ps);
     }

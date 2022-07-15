@@ -33,3 +33,5 @@
 
 #include <sal.h>
 
+#include <heapapi.h>
+

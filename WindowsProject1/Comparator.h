@@ -1,6 +1,7 @@
 #pragma once
 #include "framework.h"
 #include "Resource.h"
+//extern  ScrollFileInfo ScrolledFilesInfo;
 
 class COMPARATOR {
 public:
@@ -10,6 +11,10 @@ public:
 
 	~COMPARATOR() {
 
+	}
+
+	HWND ReturnUpdatingWindow(int key) {
+		return m_UpdatingWindows[key];
 	}
 
 	int FindWindowsWithHWND(HWND Window, BOOL FindTextBoxAndButtons) {
@@ -269,6 +274,31 @@ public:
 		return m_UpdatingWindowsKeys;
 	}
 
+	BOOL AddPage(char* page, HWND Window){
+		Pages.push_back({Window, page});
+		return TRUE;
+	}
+
+	BOOL ClearPages(HANDLE LocalHeap) {
+		for (int i = 0; i < Pages.size(); i++)
+			HeapFree(LocalHeap, NULL, Pages[i].second);
+		//DWORD er = GetLastError();
+		Pages.clear();
+		return TRUE;
+	}
+
+	void AddDifferences(LONGLONG num) {
+		Differences.push_back(num);
+	}
+
+	BOOL FindDifferences(LONGLONG num) {
+		if (Differences.end() == std::find(Differences.begin(), Differences.end(), num))
+			return TRUE;
+		return FALSE;
+
+	}
+
+
 private:
 	std::vector <char*> m_UpdatingWindowsKeys;
 	std::vector <HWND> m_UpdatingWindows;
@@ -276,4 +306,6 @@ private:
 	std::vector <HWND> m_allWindows;
 	std::vector <HWND> m_ButtonsAndTextBox;
 	std::vector <char*> m_ButtonsAndTextBoxKeys;
+	std::vector <std::pair<HWND, char*>> Pages;
+	std::vector <LONGLONG> Differences;
 };

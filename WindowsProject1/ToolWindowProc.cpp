@@ -155,7 +155,10 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ScrolledFilesInfo.m_ScrollVerticalOffset = 0;
             SetVerticalScrollRange();
 
+           // CompareAllFiles();
+
             Comparator.DrawNewFiles();
+
 
             break;
         }

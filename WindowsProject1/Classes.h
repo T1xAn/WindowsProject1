@@ -21,14 +21,14 @@ public:
 	~ScrollFileInfo() {};
 
 	// Функция получает информацию о гранулярности системы и сохраняет её в переменной класса
-	BOOL GetSystemGranularity()
+	DWORD GetSystemGranularity()
 	{
 		SYSTEM_INFO SYSINF;
 		GetSystemInfo(&SYSINF);
 		m_Granularity = SYSINF.dwAllocationGranularity;
 		if (m_Granularity == 0) 
-			return false;
-		return true;
+			return 0;
+		return SYSINF.dwPageSize;
 	}
 
 	// Функция возвращает размер наибольшего, запущенного в данный момент файла
@@ -139,12 +139,21 @@ public:
 		return m_CharOnScreen;
 	}
 
+	void GetLocalHeap(HANDLE Heap) {
+		m_LocalHeap = Heap;
+		return;
+	}
+
+	HANDLE ReturnLocalHeap() {
+		return m_LocalHeap;
+	}
 	
 	LONGLONG  m_ScrollVerticalOffset; // Текущий оффсет вертикальной полосы прокрутки
 	LONG m_ScrollHorizontalOffset;	  // Текущий оффсет горизонтальной полосы прокрутки
 	LONG m_BytesOnString;			  // Текущее колличество байт, отображаемых в одной строке
 
 private:
+	HANDLE m_LocalHeap;
 	DWORD m_Granularity; // Гранулярность системы
 	TEXTMETRIC m_TextMetric; // Параметры выбранного шрифта
 	LONG m_Strings_on_screen; // Целое колличество строк которое может поместиться на экране
