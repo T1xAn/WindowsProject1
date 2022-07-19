@@ -32,6 +32,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         else
             ScrolledFilesInfo.m_ScrollVerticalOffset += 5;
 
+        Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
         Comparator.SendVerticalScrollMessage(NULL);
 
         break;
@@ -62,7 +63,10 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     }
     case WM_VSCROLL: {
-        
+
+        if(wParam != -1)
+        Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
+
         cWindowInfo *CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
         SCROLLINFO Scrollinfo;
         Scrollinfo.cbSize = sizeof(SCROLLBARINFO);
@@ -101,6 +105,8 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
         if (CurrentWindow->ReturnFileHANDLE() != NULL)
         {
+            ReadPage(CurrentWindow->ReturnFileHANDLE(), ScrolledFilesInfo.ReturnGranularity(), CurrentWindow->ReturnFileSize().QuadPart, 
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);
 
             if (wParam != -1)
                 Comparator.SendVerticalScrollMessage(hWnd);
@@ -111,6 +117,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
                 ScrolledFilesInfo.m_ScrollVerticalOffset)));
             SetScrollPos(hWnd, SB_VERT, ScrollButtonPos, TRUE);
+
             Comparator.SendWMPaintMessage(hWnd);
 
         }
@@ -180,7 +187,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         LARGE_INTEGER CurrentFileSize = CurrentWindow->ReturnFileSize();
         HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE(); 
 
-        Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
+
 
         if (CurrentFile != NULL) {
             //ReadPage(CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart, ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);

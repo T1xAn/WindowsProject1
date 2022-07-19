@@ -105,6 +105,8 @@ public:
 			if(m_UpdatingWindows[i] != CurrentWindow)
 			SendNotifyMessage(m_UpdatingWindows[i], WM_VSCROLL, -1L, -1L);
 		}
+
+		ComparePages();
 		return  TRUE;
 	}
 
@@ -274,16 +276,30 @@ public:
 		return m_UpdatingWindowsKeys;
 	}
 
-	BOOL AddPage(char* page, HWND Window){
-		Pages.push_back({Window, page});
+	BOOL AddPage(char* page, DWORD PageNumChar,HWND Window){
+		Pages.push_back({Window,{PageNumChar, page}});
 		return TRUE;
 	}
 
 	BOOL ClearPages(HANDLE LocalHeap) {
-		for (int i = 0; i < Pages.size(); i++)
-			HeapFree(LocalHeap, NULL, Pages[i].second);
-		//DWORD er = GetLastError();
+		for (int i = 0; i < Pages.size(); i++) {
+			HeapFree(LocalHeap, NULL, Pages[i].second.second);
+		}
 		Pages.clear();
+		return TRUE;
+	}
+
+	BOOL ComparePages() {
+		Differences.clear();
+		for (int count = 0; count < Pages.size()-1; count++) {
+			char* FirstPage = Pages[count].second.second;
+			char* SecondPage = Pages[count + 1].second.second;
+			int CharCount = min(Pages[count].second.first, Pages[count+1].second.first);
+			for (int i = 0; i < CharCount; i++) {
+				if (FirstPage[i] != SecondPage[i] && Differences.end() == std::find(Differences.begin(), Differences.end(), i))
+					Differences.push_back(i);
+				}
+		}
 		return TRUE;
 	}
 
@@ -306,6 +322,6 @@ private:
 	std::vector <HWND> m_allWindows;
 	std::vector <HWND> m_ButtonsAndTextBox;
 	std::vector <char*> m_ButtonsAndTextBoxKeys;
-	std::vector <std::pair<HWND, char*>> Pages;
+	std::vector <std::pair <HWND,std::pair<DWORD, char*>>> Pages;
 	std::vector <LONGLONG> Differences;
 };

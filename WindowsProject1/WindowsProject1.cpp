@@ -42,7 +42,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
    //SIZE_T a = sizeof(char*) * ((ScrolledFilesInfo.ReturnGranularity() / 2) * NUMBER_OF_WINDOWS + 50);
 
-      HANDLE newHeap = HeapCreate(NULL, PageSize, PageSize*NUMBER_OF_WINDOWS);
+      HANDLE newHeap = HeapCreate(HEAP_NO_SERIALIZE, PageSize, PageSize*NUMBER_OF_WINDOWS);
       ScrolledFilesInfo.GetLocalHeap(newHeap);
 
     // Цикл основного сообщения:
@@ -101,7 +101,7 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
             cWindowInfo* CurrentWindowInfo = new cWindowInfo;
 
-            HWND WindowHWND = CreateWindowW((LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
+            HWND WindowHWND = CreateWindowW(/*WS_EX_COMPOSITED,*/(LPCWSTR)WindowInfo.GetOutWindowClass(), NULL
                 , WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER,
                 0, ceil(rect.bottom * 0.1), rect.right / 2, ceil(rect.bottom * 0.9), hWnd, nullptr, WindowInfo.hInst, nullptr);
             char* Key = (char*)calloc(50, sizeof(char));

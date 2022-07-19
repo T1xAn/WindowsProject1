@@ -214,12 +214,16 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
 }
 
 void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSET, _In_ LONG BytesOnString, HWND Window) {
+
+    if (OFFSET >= FileSize) {
+        return;
+    }
      int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
 
-     size_t HeapPartSize = BytesOnString * Strings_On_Screen + 1;
+     size_t HeapPartSize = sizeof(char)*(BytesOnString * Strings_On_Screen + 1);
 
-    char* BufferString = (char*)HeapAlloc(ScrolledFilesInfo.ReturnLocalHeap(), 0, HeapPartSize);
-
+    char* BufferString = (char*)HeapAlloc(ScrolledFilesInfo.ReturnLocalHeap(), HEAP_ZERO_MEMORY, HeapPartSize);
+    //ZeroMemory(BufferString, strlen(BufferString));
     DWORD Block = Granularity, height = 1;
     OFFSET *= BytesOnString;
     DWORDLONG i = OFFSET;
@@ -236,16 +240,30 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
     int CharOffset = 0;
     Block = Strings_On_Screen;
     i -= OFFSET;
-
+    int BufferStringSize = 0;
     for (int count = 0; count < Block; count++) {
-       
-        for (int j = 0; j < BytesOnString; j++) {
-            CharOffset += snprintf (BufferString + CharOffset, HeapPartSize - CharOffset, "%C", LRFILE[i + j]);
+
+        int CharCount = BytesOnString;
+        if ( (FileSize - (OFFSET + i)) < BytesOnString) {
+            CharCount = FileSize - (OFFSET + i);
+        }
+        for (int j = 0; j < CharCount; j++) {
+           /* if (LRFILE[i + j] == '\r' && LRFILE[i + j + 1] == '\n') {
+                CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
+                continue;
+            }*/
+            if ((char)LRFILE[i + j] == '\0')
+                BufferString[BufferStringSize] = '\0';
+            else
+            BufferString[BufferStringSize] = (char)LRFILE[i+j];
+            BufferStringSize++;
+            //CharOffset += snprintf (BufferString + CharOffset, HeapPartSize - CharOffset, "%c", LRFILE[i + j]);
         }
 
 
         i += BytesOnString;
-
+        if (OFFSET + i >= FileSize)
+            break;
         if (i == Granularity) {
             UnmapViewOfFile(LRFILE);
             int temp = Block;
@@ -260,65 +278,67 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
         }
        
     }
-    Comparator.AddPage(BufferString, Window);
+    Comparator.AddPage(BufferString, BufferStringSize ,Window);
         return;
 }
 
-BOOL CompareAllFiles() {
-
-    std::vector <std::pair <int, std::pair <HANDLE, HANDLE>>> ComparableFiles = Comparator.ReturnOpenFileHandles();
-
-    DWORD Block = ScrolledFilesInfo.ReturnGranularity();
-    for (int FileCount = 0; FileCount < Comparator.ReturnOpenFileHandles().size(); FileCount++) {
-
-        HANDLE FirstFile = ComparableFiles[FileCount].second.first;
-
-        for (int ComparableFileCount = 0; ComparableFileCount < Comparator.ReturnOpenFileHandles().size(); ComparableFileCount++) {
-
-            if (FirstFile == ComparableFiles[ComparableFileCount].second.first) continue;
-
-            HANDLE SecondFile = ComparableFiles[ComparableFileCount].second.first;
-            
-
-           
-           cWindowInfo* FirstWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[FileCount].first), GWLP_USERDATA);
-           LARGE_INTEGER FirstFileSize = FirstWindow->ReturnFileSize();
-           cWindowInfo* SecondWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[ComparableFileCount].first), GWLP_USERDATA);
-           LARGE_INTEGER SecondFileSize = SecondWindow->ReturnFileSize();
 
 
-           PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ,0, 0, Block);
-           PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, 0, 0, Block);
-
-           LONGLONG MainOffset = 0;
-
-           DWORD GranOffset = 0;
-           while (MainOffset + GranOffset < min(FirstFileSize.QuadPart, SecondFileSize.QuadPart)) {
-               if (FRFILE[GranOffset] != SRFILE[GranOffset])
-                   if(Comparator.FindDifferences((MainOffset + GranOffset)))
-                   Comparator.AddDifferences((MainOffset + GranOffset));
-               GranOffset++;
-                   if (GranOffset == Block) {
-                       UnmapViewOfFile(FRFILE);
-                       UnmapViewOfFile(SRFILE);
-                       int temp = Block;
-                       DWORD Granularity = ScrolledFilesInfo.ReturnGranularity();
-                       Block = Granularity;
-                       MainOffset = (((MainOffset / Granularity) + 1) * Granularity);
-                       DWORD HighOffset = ((MainOffset >> 32) & 0xFFFFFFFFul);
-                       DWORD LowOffset = static_cast<DWORD>(MainOffset & 0xFFFFFFFFul);
-                       if (Block > FirstFileSize.QuadPart - MainOffset) Block = FirstFileSize.QuadPart - MainOffset;
-                       PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
-
-                       Block = Granularity;
-                       if (Block > SecondFileSize.QuadPart - MainOffset) Block = SecondFileSize.QuadPart - MainOffset;
-                       PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
-                       GranOffset = 0;
-                       Block = temp;
-                   }
-           }
-               
-        }
-    }
-    return TRUE;
-}
+//BOOL CompareAllFiles() {
+//
+//    std::vector <std::pair <int, std::pair <HANDLE, HANDLE>>> ComparableFiles = Comparator.ReturnOpenFileHandles();
+//
+//    DWORD Block = ScrolledFilesInfo.ReturnGranularity();
+//    for (int FileCount = 0; FileCount < Comparator.ReturnOpenFileHandles().size(); FileCount++) {
+//
+//        HANDLE FirstFile = ComparableFiles[FileCount].second.first;
+//
+//        for (int ComparableFileCount = 0; ComparableFileCount < Comparator.ReturnOpenFileHandles().size(); ComparableFileCount++) {
+//
+//            if (FirstFile == ComparableFiles[ComparableFileCount].second.first) continue;
+//
+//            HANDLE SecondFile = ComparableFiles[ComparableFileCount].second.first;
+//            
+//
+//           
+//           cWindowInfo* FirstWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[FileCount].first), GWLP_USERDATA);
+//           LARGE_INTEGER FirstFileSize = FirstWindow->ReturnFileSize();
+//           cWindowInfo* SecondWindow = (cWindowInfo*)GetWindowLongPtr(Comparator.ReturnUpdatingWindow(ComparableFiles[ComparableFileCount].first), GWLP_USERDATA);
+//           LARGE_INTEGER SecondFileSize = SecondWindow->ReturnFileSize();
+//
+//
+//           PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ,0, 0, Block);
+//           PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, 0, 0, Block);
+//
+//           LONGLONG MainOffset = 0;
+//
+//           DWORD GranOffset = 0;
+//           while (MainOffset + GranOffset < min(FirstFileSize.QuadPart, SecondFileSize.QuadPart)) {
+//               if (FRFILE[GranOffset] != SRFILE[GranOffset])
+//                   if(Comparator.FindDifferences((MainOffset + GranOffset)))
+//                   Comparator.AddDifferences((MainOffset + GranOffset));
+//               GranOffset++;
+//                   if (GranOffset == Block) {
+//                       UnmapViewOfFile(FRFILE);
+//                       UnmapViewOfFile(SRFILE);
+//                       int temp = Block;
+//                       DWORD Granularity = ScrolledFilesInfo.ReturnGranularity();
+//                       Block = Granularity;
+//                       MainOffset = (((MainOffset / Granularity) + 1) * Granularity);
+//                       DWORD HighOffset = ((MainOffset >> 32) & 0xFFFFFFFFul);
+//                       DWORD LowOffset = static_cast<DWORD>(MainOffset & 0xFFFFFFFFul);
+//                       if (Block > FirstFileSize.QuadPart - MainOffset) Block = FirstFileSize.QuadPart - MainOffset;
+//                       PBYTE FRFILE = (PBYTE)MapViewOfFile(FirstFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+//
+//                       Block = Granularity;
+//                       if (Block > SecondFileSize.QuadPart - MainOffset) Block = SecondFileSize.QuadPart - MainOffset;
+//                       PBYTE SRFILE = (PBYTE)MapViewOfFile(SecondFile, FILE_MAP_READ, HighOffset, LowOffset, Block);
+//                       GranOffset = 0;
+//                       Block = temp;
+//                   }
+//           }
+//               
+//        }
+//    }
+//    return TRUE;
+//}
