@@ -90,10 +90,15 @@
 			return m_ChildWindows;
 		}
 
+		void AddPage(char* newPage, DWORD CharNum) {
+			Page = { CharNum, newPage };
+		}
+
 	private:
 		HWND m_Window;
 		HANDLE m_File;
 		LARGE_INTEGER m_FileSize;
+		std::pair <DWORD, char*> Page;
 		std::vector <std::pair<char*, HWND>> m_ChildWindows;
 		char* m_key;
 	};

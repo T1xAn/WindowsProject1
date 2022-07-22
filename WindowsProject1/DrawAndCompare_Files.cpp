@@ -213,11 +213,11 @@ HDC CompareTwoFiles(_In_ HANDLE WindowFile, _In_ DWORDLONG WindowFileSize, _In_ 
     return DrawDC;
 }
 
-void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSET, _In_ LONG BytesOnString, HWND Window) {
+BOOL ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSET, _In_ LONG BytesOnString, HWND Window) {
 
-    if (OFFSET >= FileSize) {
-        return;
-    }
+    OFFSET *= BytesOnString;
+    if (FileSize <= OFFSET)
+        return FALSE;
      int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
 
      size_t HeapPartSize = sizeof(char)*(BytesOnString * Strings_On_Screen + 1);
@@ -225,7 +225,7 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
     char* BufferString = (char*)HeapAlloc(ScrolledFilesInfo.ReturnLocalHeap(), HEAP_ZERO_MEMORY, HeapPartSize);
     //ZeroMemory(BufferString, strlen(BufferString));
     DWORD Block = Granularity, height = 1;
-    OFFSET *= BytesOnString;
+    //OFFSET *= BytesOnString;
     DWORDLONG i = OFFSET;
     OFFSET = (OFFSET / Granularity);
     
@@ -237,6 +237,7 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
 
     if (Block > FileSize - OFFSET) Block = FileSize - OFFSET;
     PBYTE LRFILE = (PBYTE)MapViewOfFile(File, FILE_MAP_READ, HighOffset, LowOffset, Block);
+    DWORD er = GetLastError();
     int CharOffset = 0;
     Block = Strings_On_Screen;
     i -= OFFSET;
@@ -252,9 +253,6 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
                 CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
                 continue;
             }*/
-            if ((char)LRFILE[i + j] == '\0')
-                BufferString[BufferStringSize] = '\0';
-            else
             BufferString[BufferStringSize] = (char)LRFILE[i+j];
             BufferStringSize++;
             //CharOffset += snprintf (BufferString + CharOffset, HeapPartSize - CharOffset, "%c", LRFILE[i + j]);
@@ -279,9 +277,86 @@ void ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
        
     }
     Comparator.AddPage(BufferString, BufferStringSize ,Window);
-        return;
+        return TRUE;
 }
 
+//void CompareAndDrow(_In_ LONG HorizontalOffset, _In_ LONG BytesOnString, char* Page, DWORD CharOnPage, DWORDLONG OFFSET, HDC WindowHDC) {
+//
+//    DWORD height = 1;
+//    char BufferString[256] = "";
+//    OFFSET *= BytesOnString;
+//    int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+//    TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
+//
+//
+//    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+//
+//    SelectObject(WindowHDC, FONT);
+//
+//
+//    int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ScrolledFilesInfo.ReturnBiggestFile());
+//
+//
+//    int HexOffset = 0;
+//    LONGLONG i = OFFSET;
+//    for (int count = 0; count < Block; count++)
+//    {
+//        int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*llX :", StrNum, i);
+//
+//        if (i + OFFSET >= FileSize) {
+//            i += BytesOnString;
+//            TextOutA(WindowHDC, 5, height, (LPCSTR)BufferString, strlen(BufferString));
+//            height += TextMetric.tmHeight;
+//            BufferString[0] = '\0';
+//            continue;
+//        }
+//
+//        if (HorizontalOffset != 0) {
+//            if (HorizontalOffset > BufferOffset) {
+//                HexOffset = HorizontalOffset - BufferOffset;
+//                BufferOffset = 0;
+//            }
+//            else {
+//                for (int i = 0; i < BufferOffset - HorizontalOffset; i++)
+//                    BufferString[i] = BufferString[i + HorizontalOffset];
+//                BufferOffset = BufferOffset - HorizontalOffset;
+//            }
+//        }
+//        int StrNumOffset = BufferOffset;
+//
+//        for (int j = HexOffset; j < BytesOnString; j++) {
+//            BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", LRFILE[i + j]);
+//        }
+//        BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " |");
+//
+//        if (HorizontalOffset > BytesOnString + StrNum + 2) {
+//            HexOffset = HorizontalOffset - (BytesOnString + StrNum + 2);
+//            BufferOffset = 0;
+//        }
+//        else {
+//            HexOffset = 0;
+//            BufferOffset *= TextMetric.tmAveCharWidth;
+//            TextOutA(WindowHDC, 5, height, (LPCSTR)BufferString, strlen(BufferString));
+//        }
+//
+//        int CharOffset = 0;
+//        for (int j = HexOffset; j < BytesOnString; j++) {
+//            if (LRFILE[i + j] == '\r' && LRFILE[i + j + 1] == '\n') {
+//                CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
+//                continue;
+//            }
+//            CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, " %C", LRFILE[i + j]);
+//        }
+//        TextOutA(WindowHDC, 5 + BufferOffset + 5, height, (LPCSTR)BufferString, strlen(BufferString));
+//
+//        i += BytesOnString;
+//
+//        height += TextMetric.tmHeight;
+//    }
+//
+//    return;
+//
+//}
 
 
 //BOOL CompareAllFiles() {

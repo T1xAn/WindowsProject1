@@ -277,6 +277,8 @@ public:
 	}
 
 	BOOL AddPage(char* page, DWORD PageNumChar,HWND Window){
+		 cWindowInfo* WindowInfo = (cWindowInfo*)GetWindowLongPtr(Window, GWLP_USERDATA);
+		 WindowInfo->AddPage(page, PageNumChar);
 		Pages.push_back({Window,{PageNumChar, page}});
 		return TRUE;
 	}
@@ -291,6 +293,8 @@ public:
 
 	BOOL ComparePages() {
 		Differences.clear();
+		if (Pages.size() == 0)
+			return FALSE;
 		for (int count = 0; count < Pages.size()-1; count++) {
 			char* FirstPage = Pages[count].second.second;
 			char* SecondPage = Pages[count + 1].second.second;
@@ -312,6 +316,14 @@ public:
 			return TRUE;
 		return FALSE;
 
+	}
+
+	BOOL FindPage(HWND Window) {
+		for (int i = 0; i < Pages.size(); i++) {
+			if (Pages[i].first == Window)
+				return TRUE;
+		}
+		return FALSE;
 	}
 
 

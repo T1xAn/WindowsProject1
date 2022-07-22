@@ -137,11 +137,14 @@ LRESULT CALLBACK WndProc(HWND hWnd,
         int Menu_height = GetSystemMetrics(SM_CYMENUSIZE);
         auto childWindows = MainWindow->ReturnChildWindows();
         int left_offset = 0;
+
+        Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
         for (int count = 0; count < NUMBER_OF_WINDOWS; count++) {
 
             MoveWindow(childWindows[count+1].second, left_offset, ceil((Screen_height - Menu_height) * 0.1), rc.right / NUMBER_OF_WINDOWS, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
             left_offset += rc.right / NUMBER_OF_WINDOWS +1;
         }
+        Comparator.ComparePages();
         //MoveWindow(MainWindow->FindChildWindow((char*)"LeftWindow"), 0, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);
         MoveWindow(MainWindow->FindChildWindow((char*)"ToolBarWindow"), 0, 0, rc.right, ceil((Screen_height - Menu_height) * 0.1), TRUE);
         //MoveWindow(MainWindow->FindChildWindow((char*)"RightWindow"), rc.right/2, ceil((Screen_height - Menu_height) * 0.1), rc.right / 2, ceil(rc.bottom - (Screen_height - Menu_height) * 0.1), TRUE);

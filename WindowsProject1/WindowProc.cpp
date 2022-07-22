@@ -60,6 +60,11 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
         }
 
+        cWindowInfo* CurrentWindowInfo = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+        if (CurrentWindowInfo != NULL && Comparator.FindPage(hWnd) != TRUE)
+        ReadPage(CurrentWindowInfo->ReturnFileHANDLE(),ScrolledFilesInfo.ReturnGranularity(),CurrentWindowInfo->ReturnFileSize().QuadPart,
+            ScrolledFilesInfo.m_ScrollVerticalOffset,ScrolledFilesInfo.m_BytesOnString, hWnd);
+
         break;
     }
     case WM_VSCROLL: {
