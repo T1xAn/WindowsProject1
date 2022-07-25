@@ -253,7 +253,8 @@ BOOL ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
                 CharOffset += snprintf(BufferString + CharOffset, sizeof(BufferString) - CharOffset, "  ");
                 continue;
             }*/
-            BufferString[BufferStringSize] = (char)LRFILE[i+j];
+          
+            BufferString[BufferStringSize] = (unsigned char)LRFILE[i+j];
             BufferStringSize++;
             //CharOffset += snprintf (BufferString + CharOffset, HeapPartSize - CharOffset, "%c", LRFILE[i + j]);
         }
@@ -280,7 +281,7 @@ BOOL ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
         return TRUE;
 }
 
-void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, LONGLONG OFFSET, LONG BytesOnString, LONG HorizontalOffset, HDC DrawHDC) {
+HDC DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, LONGLONG OFFSET, LONG BytesOnString, LONG HorizontalOffset, HDC DrawHDC, LONGLONG FileSize) {
 
     DWORD height = 1;
     char BufferString[256] = "";
@@ -292,7 +293,7 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
     HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
     SelectObject(DrawHDC, FONT);
 
-   DWORD Block = ceil(CharOnPage/(double)BytesOnString);
+   DWORD Block = Strings_On_Screen;
 
     int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ScrolledFilesInfo.ReturnBiggestFile());
 
@@ -302,7 +303,12 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
     for (int count = 0; count < Block; count++)
     {
         int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*llX :", StrNum, i + OFFSET);
-
+        if (OFFSET + i >= FileSize) {
+            TextOutA(DrawHDC, 5, height, (LPCSTR)BufferString, strlen(BufferString));
+            height += TextMetric.tmHeight;
+            i += BytesOnString;
+            continue;
+        }
         if (HorizontalOffset != 0) {
 
         if (HorizontalOffset > BytesOnString + StrNum) {
@@ -322,6 +328,7 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
             }
         }
 
+      
    
         int StrNumOffset = BufferOffset;
         int PrewDiffrOffset = 0;
@@ -329,13 +336,12 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
         if (HexFlag) {
             for (int j = HexOffset; j < BytesOnString; j++) {
                 if (i + j <= CharOnPage) {
-                    if (Comparator.FindDifferences((i + j))) {
-                        // if
+                    if (!Comparator.FindDifferences((i + j))) {
                         TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
                         PrewDiffrOffset += BufferOffset;
 
                         SetTextColor(DrawHDC, RGB(255, 0, 0));
-                        BufferOffset = snprintf(BufferString, sizeof(BufferString), " %02X", Page[i + j]);
+                        BufferOffset = snprintf(BufferString, sizeof(BufferString), " %02X", (unsigned char)Page[i + j]);
                         TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
                         PrewDiffrOffset += BufferOffset;
                         ZeroMemory(BufferString, BufferOffset);
@@ -343,7 +349,7 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
                         SetTextColor(DrawHDC, RGB(0, 0, 0));
                     }
                     else
-                        BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", Page[i + j]);
+                        BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", (unsigned char)Page[i + j]);
                 }
             }
             HexOffset = 0;
@@ -357,11 +363,11 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
                     BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, "  ");
                     continue;
                 }
-                if (Comparator.FindDifferences((i + j))) {
+                if (!Comparator.FindDifferences((i + j))) {
                     TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
                     PrewDiffrOffset += BufferOffset;
                     SetTextColor(DrawHDC, RGB(255, 0, 0));
-                    BufferOffset = snprintf(BufferString, sizeof(BufferString), " %C", Page[i + j]);
+                    BufferOffset = snprintf(BufferString, sizeof(BufferString), " %C", (unsigned char)Page[i + j]);
                     TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
                     PrewDiffrOffset += BufferOffset;
                     ZeroMemory(BufferString, BufferOffset);
@@ -369,7 +375,7 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
                     SetTextColor(DrawHDC, RGB(0, 0, 0));
                 }
                 else
-                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %C", Page[i + j]);
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %C", (unsigned char)Page[i + j]);
             }
         }
         TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
@@ -379,7 +385,7 @@ void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences,
         height += TextMetric.tmHeight;
     }
 
-    return;
+    return DrawHDC;
 }
 
 //void CompareAndDrow(_In_ LONG HorizontalOffset, _In_ LONG BytesOnString, char* Page, DWORD CharOnPage, DWORDLONG OFFSET, HDC WindowHDC) {

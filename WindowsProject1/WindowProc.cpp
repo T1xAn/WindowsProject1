@@ -189,15 +189,16 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         HDC hdc = BeginPaint(hWnd, &ps);
 
         cWindowInfo* CurrentWindow = (cWindowInfo*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-        LARGE_INTEGER CurrentFileSize = CurrentWindow->ReturnFileSize();
-        HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE(); 
+       /* LARGE_INTEGER CurrentFileSize = CurrentWindow->ReturnFileSize();
+        HANDLE CurrentFile = CurrentWindow->ReturnFileHANDLE(); */
+        std::pair<DWORD, char*> CurrentPage = CurrentWindow->ReturnPage();
 
 
 
-        if (CurrentFile != NULL) {
-            //ReadPage(CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart, ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);
-            ///CompareAllFiles();
-        }
+        //if (CurrentFile != NULL) {
+        //    //ReadPage(CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart, ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);
+        //    ///CompareAllFiles();
+        //}
         RECT rc;
         GetClientRect(hWnd, &rc);
         hdc = GetDC(hWnd);
@@ -208,11 +209,14 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         DeleteObject(BitMap);
         BitBlt(BlitHDC, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, WHITENESS);
 
-        if (CurrentFile != NULL) {
+        if (CurrentWindow->ReturnFileHANDLE() != NULL) {
+           
+             BlitHDC= DrawPages(CurrentPage.second,CurrentPage.first,Comparator.ReturnDifferences(),ScrolledFilesInfo.m_ScrollVerticalOffset,ScrolledFilesInfo.m_BytesOnString
+            ,ScrolledFilesInfo.m_ScrollHorizontalOffset,BlitHDC, CurrentWindow->ReturnFileSize().QuadPart);
 
-            BlitHDC = GetEightBitsHex(hWnd, CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart,
-                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);
-            for (int count = 0; count < Comparator.ReturnUpdatingWindows().size(); count++) {
+          /*  BlitHDC = GetEightBitsHex(hWnd, CurrentFile, ScrolledFilesInfo.ReturnGranularity(), CurrentFileSize.QuadPart,
+                ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, BlitHDC);*/
+           /* for (int count = 0; count < Comparator.ReturnUpdatingWindows().size(); count++) {
 
                 cWindowInfo* OtherWindow = Comparator.FindOtherComparableFile(hWnd, count);
                 if (OtherWindow != NULL) {
@@ -224,7 +228,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                             ScrolledFilesInfo.m_ScrollHorizontalOffset, ScrolledFilesInfo.m_BytesOnString, ScrolledFilesInfo.ReturnGranularity());
                     }
                 }
-            }
+            }*/
         }
         BitBlt(hdc, 0, 0, rc.right, rc.bottom, BlitHDC, 0, 0, SRCCOPY);
         DeleteDC(BlitHDC);

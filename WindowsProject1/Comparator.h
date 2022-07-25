@@ -328,6 +328,10 @@ public:
 		return FALSE;
 	}
 
+	std::vector <LONGLONG> ReturnDifferences() {
+		return Differences;
+	}
+
 
 private:
 	std::vector <char*> m_UpdatingWindowsKeys;

@@ -100,6 +100,10 @@
 			return;
 		}
 
+		std::pair<DWORD,char*> ReturnPage() {
+			return Page;
+		}
+
 	private:
 		HWND m_Window;
 		HANDLE m_File;
