@@ -94,6 +94,12 @@
 			Page = { CharNum, newPage };
 		}
 
+		void ClearPage() {
+			Page.first = NULL;
+			Page.second = NULL;
+			return;
+		}
+
 	private:
 		HWND m_Window;
 		HANDLE m_File;

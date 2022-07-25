@@ -280,6 +280,108 @@ BOOL ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
         return TRUE;
 }
 
+void DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, LONGLONG OFFSET, LONG BytesOnString, LONG HorizontalOffset, HDC DrawHDC) {
+
+    DWORD height = 1;
+    char BufferString[256] = "";
+    OFFSET *= BytesOnString;
+    int SecondOffset = 0;
+    int Strings_On_Screen = ScrolledFilesInfo.ReturnStringsOnScreen();
+    TEXTMETRIC TextMetric = ScrolledFilesInfo.ReturnTextMetric();
+
+    HFONT FONT = (HFONT)GetStockObject(SYSTEM_FIXED_FONT);
+    SelectObject(DrawHDC, FONT);
+
+   DWORD Block = ceil(CharOnPage/(double)BytesOnString);
+
+    int StrNum = snprintf(BufferString, sizeof(BufferString), "%llX", ScrolledFilesInfo.ReturnBiggestFile());
+
+    BOOL HexFlag = TRUE;
+    int HexOffset = 0;
+    DWORD i = 0;
+    for (int count = 0; count < Block; count++)
+    {
+        int BufferOffset = snprintf(BufferString, sizeof(BufferString), "%0*llX :", StrNum, i + OFFSET);
+
+        if (HorizontalOffset != 0) {
+
+        if (HorizontalOffset > BytesOnString + StrNum) {
+            HexOffset = HorizontalOffset - (BytesOnString + StrNum);
+            BufferOffset = 0;
+            HexFlag = FALSE;
+            break;
+        }
+            if (HorizontalOffset > BufferOffset) {
+                HexOffset = HorizontalOffset - BufferOffset;
+                BufferOffset = 0;
+            }
+            else {
+                for (int i = 0; i < BufferOffset - HorizontalOffset; i++)
+                    BufferString[i] = BufferString[i + HorizontalOffset];
+                BufferOffset = BufferOffset - HorizontalOffset;
+            }
+        }
+
+   
+        int StrNumOffset = BufferOffset;
+        int PrewDiffrOffset = 0;
+
+        if (HexFlag) {
+            for (int j = HexOffset; j < BytesOnString; j++) {
+                if (i + j <= CharOnPage) {
+                    if (Comparator.FindDifferences((i + j))) {
+                        // if
+                        TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
+                        PrewDiffrOffset += BufferOffset;
+
+                        SetTextColor(DrawHDC, RGB(255, 0, 0));
+                        BufferOffset = snprintf(BufferString, sizeof(BufferString), " %02X", Page[i + j]);
+                        TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
+                        PrewDiffrOffset += BufferOffset;
+                        ZeroMemory(BufferString, BufferOffset);
+                        BufferOffset = 0;
+                        SetTextColor(DrawHDC, RGB(0, 0, 0));
+                    }
+                    else
+                        BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %02X", Page[i + j]);
+                }
+            }
+            HexOffset = 0;
+        }
+            if (HorizontalOffset < (BytesOnString + StrNum+2))
+            BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " |");
+       
+        for (int j = HexOffset; j < BytesOnString; j++) {
+            if (i + j <= CharOnPage) {
+                if (Page[i + j] == '\r' && Page[i + j + 1] == '\n') {
+                    BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, "  ");
+                    continue;
+                }
+                if (Comparator.FindDifferences((i + j))) {
+                    TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
+                    PrewDiffrOffset += BufferOffset;
+                    SetTextColor(DrawHDC, RGB(255, 0, 0));
+                    BufferOffset = snprintf(BufferString, sizeof(BufferString), " %C", Page[i + j]);
+                    TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
+                    PrewDiffrOffset += BufferOffset;
+                    ZeroMemory(BufferString, BufferOffset);
+                    BufferOffset = 0;
+                    SetTextColor(DrawHDC, RGB(0, 0, 0));
+                }
+                else
+                BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " %C", Page[i + j]);
+            }
+        }
+        TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));
+
+        i += BytesOnString;
+
+        height += TextMetric.tmHeight;
+    }
+
+    return;
+}
+
 //void CompareAndDrow(_In_ LONG HorizontalOffset, _In_ LONG BytesOnString, char* Page, DWORD CharOnPage, DWORDLONG OFFSET, HDC WindowHDC) {
 //
 //    DWORD height = 1;

@@ -63,11 +63,12 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"8");
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"16");
         SendMessage(List, LB_ADDSTRING, 0, (LPARAM)L"32");
+
         for (int count = 0; count < 3; count++) {
             int data = pow(2, count + 3);
             SendMessage(List, LB_SETITEMDATA, count, (LPARAM)data);
-
         }
+
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)CurrentWindowInfo);
     }
 
@@ -80,12 +81,14 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         std::vector <char*> ButtonsAndTextBox = Comparator.ReturnButtonTextBoxkeys();
         int left_offset = 1;
+
         for (int count = 0; count/2 < NUMBER_OF_WINDOWS; count+=2) {
             MoveWindow(CurrentWindowInfo->FindChildWindow(ButtonsAndTextBox[count]), left_offset, 1, (rect.right / NUMBER_OF_WINDOWS) - ((rect.right / NUMBER_OF_WINDOWS)*0.125), ceil(rect.bottom * 0.33), TRUE);
             left_offset += (rect.right / NUMBER_OF_WINDOWS) - ((rect.right / NUMBER_OF_WINDOWS) * 0.125)+1;
             MoveWindow(CurrentWindowInfo->FindChildWindow(ButtonsAndTextBox[count+1]), left_offset, 1, (rect.right / NUMBER_OF_WINDOWS) * 0.125, ceil(rect.bottom * 0.33), TRUE);
             left_offset += (rect.right / NUMBER_OF_WINDOWS) * 0.125+1;
         }
+
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"ReadButton"), 1, ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.33), TRUE);
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"ChangeFont"), 1, (ceil(rect.bottom * 0.33) + 1) * 2, ceil(rect.right * 0.2), ceil(rect.bottom * 0.3), TRUE);
         MoveWindow(CurrentWindowInfo->FindChildWindow((char*)"List"), ceil(rect.right * 0.2), ceil(rect.bottom * 0.33) + 1, ceil(rect.right * 0.2), ceil(rect.bottom * 0.66) + 1, TRUE);
@@ -115,7 +118,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
         case IDB_ReadButton: {
-
+            Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
             Comparator.CloseMainWindowsOpenFiles();
             Comparator.EnableWindowScrollBar(NULL, TRUE, TRUE);
             int TextBarNumber = 0;
@@ -139,7 +142,8 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
 
                 if (FileMap != NULL) {
-                    Comparator.AddNewOpendFile(Comparator.ReturnUpdatingWindowsKeys()[count], FileMap, FileHandle);
+                    cWindowInfo* Window = Comparator.AddNewOpendFile(Comparator.ReturnUpdatingWindowsKeys()[count], FileMap, FileHandle);
+                    ReadPage(FileMap, ScrolledFilesInfo.ReturnGranularity(), Window->ReturnFileSize().QuadPart, 0, ScrolledFilesInfo.m_BytesOnString, Window->ReturnWindowHWND());
                     OpendFlag = TRUE;
                 }
 
@@ -150,6 +154,8 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 MessageBox(hWnd, L"Ни один файл не был открыт", L" Ошибка ", MB_OK | MB_ICONERROR);
                 break;
             }
+
+            Comparator.ComparePages();
 
             ScrolledFilesInfo.m_ScrollHorizontalOffset = 0;
             ScrolledFilesInfo.m_ScrollVerticalOffset = 0;

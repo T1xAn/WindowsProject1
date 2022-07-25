@@ -184,7 +184,7 @@ public:
 		}
 	}
 
-	BOOL AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
+	cWindowInfo* AddNewOpendFile(char* WindowKey, HANDLE FileMap, HANDLE File) {
 
 		int key = FindWindowWithKey(WindowKey,FALSE);
 		if (key == -1)
@@ -194,7 +194,7 @@ public:
 
 		cWindowInfo* Window = (cWindowInfo*)GetWindowLongPtr(m_UpdatingWindows[key], GWLP_USERDATA);
 		Window->SetWindowFileHandle(FileMap, File);
-		return TRUE;
+		return Window;
 
 	}
 
@@ -286,6 +286,8 @@ public:
 	BOOL ClearPages(HANDLE LocalHeap) {
 		for (int i = 0; i < Pages.size(); i++) {
 			HeapFree(LocalHeap, NULL, Pages[i].second.second);
+			cWindowInfo* WindowInfo = (cWindowInfo*)GetWindowLongPtr(Pages[i].first, GWLP_USERDATA);
+			WindowInfo->ClearPage();
 		}
 		Pages.clear();
 		return TRUE;
