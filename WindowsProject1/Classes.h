@@ -31,7 +31,7 @@ public:
 		return SYSINF.dwPageSize;
 	}
 
-	// Функция возвращает размер наибольшего, запущенного в данный момент файла
+	// Функция возвращает размер наибольшего, открытого в данный момент файла
 	LONGLONG ReturnBiggestFile() {
 		std::vector <std::pair <int, std::pair<HANDLE, HANDLE>>> OpenFiles = Comparator.ReturnOpenFileHandles();
 		if (OpenFiles.size() == 0) return 0;
@@ -104,10 +104,16 @@ public:
 			int OutString = StrNum + 2 + 3 * m_BytesOnString + 2 + 2 * m_BytesOnString;
 			int ReturnScroll = 0;
 			if (OutString > m_CharOnScreen) {
-				if ((ceil(OutString - m_CharOnScreen)) < (StrNum + 2)) 
-					ReturnScroll = OutString - m_CharOnScreen+2;
-				else 
-					ReturnScroll = StrNum + 2 + (ceil((OutString - m_CharOnScreen - StrNum + 2) / 3));
+				if ((ceil(OutString - m_CharOnScreen)) < (StrNum + 2))
+					ReturnScroll = OutString - m_CharOnScreen + 2;
+				if((ceil(OutString - m_CharOnScreen)) < (StrNum + 2 + 3* m_BytesOnString) && (ceil(OutString - m_CharOnScreen)) > (StrNum + 2))
+					ReturnScroll = StrNum + 2 + (ceil((OutString - m_CharOnScreen - (StrNum + 2)) / 3.0));
+				if ((ceil(OutString - m_CharOnScreen)) < (StrNum + 2 + 3 * m_BytesOnString + 2 + 2* m_BytesOnString) && (ceil(OutString - m_CharOnScreen)) > (StrNum + 2 + 3 * m_BytesOnString))
+					ReturnScroll = StrNum + 2 + m_BytesOnString + (ceil((OutString - m_CharOnScreen - (StrNum + 2 + 3 * m_BytesOnString)) / 2.0));
+				//else
+				////ReturnScroll = (StrNum + 2 + m_BytesOnString * 2 + 1) - m_CharOnScreen;
+				//ReturnScroll = StrNum + 2 + (ceil((OutString - m_CharOnScreen - (StrNum + 2)) / 3.0));
+
 				return ReturnScroll;
 			}
 			else

@@ -172,7 +172,7 @@ LRESULT CALLBACK ToolProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDB_ListBox: {
 
             if (HIWORD(wParam) == LBN_SELCHANGE) {
-
+                Comparator.ClearPages(ScrolledFilesInfo.ReturnLocalHeap());
                 HWND List = CurrentWindowInfo->FindChildWindow((char*)"List");
                 int I = (int)SendMessage(List, LB_GETCURSEL, 0, 0L);
                 double PrewBytesOnString = ScrolledFilesInfo.m_BytesOnString;

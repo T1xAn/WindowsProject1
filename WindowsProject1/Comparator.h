@@ -103,7 +103,7 @@ public:
 	BOOL SendVerticalScrollMessage(HWND CurrentWindow) {
 		for (int i = 0; i < m_UpdatingWindows.size(); i++) {
 			if(m_UpdatingWindows[i] != CurrentWindow)
-			SendNotifyMessage(m_UpdatingWindows[i], WM_VSCROLL, -1L, -1L);
+			SendMessage(m_UpdatingWindows[i], WM_VSCROLL, -1L, -1L);
 		}
 
 		ComparePages();
@@ -120,7 +120,7 @@ public:
 
 	BOOL HideScrollBars() {
 		for(int i = 0; i < m_UpdatingWindows.size(); i++ ){
-		SendNotifyMessage(m_UpdatingWindows[i], WM_VSCROLL, LOWORD(-1), NULL);
+		SendNotifyMessage(m_UpdatingWindows[i], WM_VSCROLL,-1L,-1L);
 		ShowScrollBar(m_UpdatingWindows[i], SB_HORZ, FALSE);
 		}
 		return TRUE;
@@ -180,7 +180,7 @@ public:
 	void SendWMPaintMessage(HWND Window) {
 		for (int key = 0; key < m_UpdatingWindows.size(); key++) {
 			if (m_UpdatingWindows[key] == Window)
-				SendNotifyMessage(m_UpdatingWindows[key], WM_PAINT, 0, 0);
+				PostMessage(m_UpdatingWindows[key], WM_PAINT, 0, 0);
 		}
 	}
 
