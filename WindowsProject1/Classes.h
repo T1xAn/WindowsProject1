@@ -91,7 +91,7 @@ public:
 			return false;
 
 		m_Strings_on_screen = (rt.bottom / m_TextMetric.tmHeight);
-		m_CharOnScreen = (rt.right/m_TextMetric.tmAveCharWidth);
+		m_CharOnScreen = ((rt.right - GetSystemMetrics(SM_CXVSCROLL))/m_TextMetric.tmAveCharWidth);
 
 		return true;
 	}

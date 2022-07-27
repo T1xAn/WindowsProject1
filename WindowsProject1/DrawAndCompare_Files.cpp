@@ -304,7 +304,6 @@ HDC DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, 
         }
         if (HorizontalOffset != 0) {
 
-
             if (HorizontalOffset > BufferOffset) {
                 HexOffset = HorizontalOffset - BufferOffset;
                 BufferOffset = 0; 
@@ -345,6 +344,9 @@ HDC DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, 
             }
             HexOffset = 0;
         }
+        
+        /*TextOutA(DrawHDC, 5 + PrewDiffrOffset * TextMetric.tmAveCharWidth, height, (LPCSTR)BufferString, strlen(BufferString));*/
+
             if (HorizontalOffset < (BytesOnString + StrNum+2))
             BufferOffset += snprintf(BufferString + BufferOffset, sizeof(BufferString) - BufferOffset, " |");
        

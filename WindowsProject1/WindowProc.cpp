@@ -109,7 +109,12 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         
 
         if (CurrentWindow->ReturnFileHANDLE() != NULL)
-        {
+        { 
+            
+            ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset * ScrollRange) / (ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
+            ScrollButtonPos = min(ScrollRange, ScrollButtonPos);
+            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
+                ScrolledFilesInfo.m_ScrollVerticalOffset)));
             ReadPage(CurrentWindow->ReturnFileHANDLE(), ScrolledFilesInfo.ReturnGranularity(), CurrentWindow->ReturnFileSize().QuadPart, 
                 ScrolledFilesInfo.m_ScrollVerticalOffset, ScrolledFilesInfo.m_BytesOnString, hWnd);
 
@@ -117,10 +122,7 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 Comparator.SendVerticalScrollMessage(hWnd);
 
 
-            ScrollButtonPos = floor(((ScrolledFilesInfo.m_ScrollVerticalOffset * ScrollRange) / (ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen)));
-            ScrollButtonPos = min(ScrollRange, ScrollButtonPos);
-            ScrolledFilesInfo.m_ScrollVerticalOffset = max(0, (min(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen,
-                ScrolledFilesInfo.m_ScrollVerticalOffset)));
+          
             SetScrollPos(hWnd, SB_VERT, ScrollButtonPos, TRUE);
 
             Comparator.SendWMPaintMessage(hWnd);

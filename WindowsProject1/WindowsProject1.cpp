@@ -29,6 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     WindowInfo.RegisterStrings(hInstance);
     WindowInfo.RegisterWindowClasses(hInstance);
 
+  //  DialogBox(WindowInfo.hInst, MAKEINTRESOURCE())
     // Выполнение инициализации приложения
     if (!WindowInfo.CreateAllWindow(hInstance, nCmdShow))
         return FALSE;
@@ -37,6 +38,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
  
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
+
 
     MSG msg;
 
