@@ -6,6 +6,7 @@
 #include "Functions_elements.h"
 #define MAX_LOADSTRING 100
 
+#include "resource3.h"
 
 DWORD error;
 
@@ -29,8 +30,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     WindowInfo.RegisterStrings(hInstance);
     WindowInfo.RegisterWindowClasses(hInstance);
 
-  //  DialogBox(WindowInfo.hInst, MAKEINTRESOURCE())
-    // Выполнение инициализации приложения
+    // Выполнение инициализации приложения 
+     error = GetLastError();
     if (!WindowInfo.CreateAllWindow(hInstance, nCmdShow))
         return FALSE;
 
@@ -38,10 +39,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
  
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
-
+    
 
     MSG msg;
 
+   
+    
    //SIZE_T a = sizeof(char*) * ((ScrolledFilesInfo.ReturnGranularity() / 2) * NUMBER_OF_WINDOWS + 50);
 
       HANDLE newHeap = HeapCreate(HEAP_NO_SERIALIZE, PageSize, PageSize*NUMBER_OF_WINDOWS);
@@ -79,8 +82,9 @@ LRESULT CALLBACK WndProc(HWND hWnd,
     switch (message)
     {
     case WM_CREATE: {
-        cWindowInfo *LeftWindowInfo = new cWindowInfo;
-        cWindowInfo *RightWindowInfo = new cWindowInfo;
+
+        //DialogBox(WindowInfo.hInst, LPCTSTR(IDD_DIALOG1), hWnd, (DLGPROC)Dlgproc);
+
         cWindowInfo *MainWindowInfo = new cWindowInfo;
 
         MainWindowInfo->SetWindowHandle(hWnd);

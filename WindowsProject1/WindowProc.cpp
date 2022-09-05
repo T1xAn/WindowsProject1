@@ -2,6 +2,7 @@
 #include "Resource.h"
 #include "Functions_elements.h"
 
+
 extern HANDLE LeftFile;
 extern HANDLE RightFile;
 extern ScrollFileInfo ScrolledFilesInfo;
@@ -101,7 +102,8 @@ LRESULT CALLBACK OutWindowsProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             break;
         case SB_THUMBTRACK:
             ScrollButtonPos = Scrollinfo.nTrackPos;
-            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * ((double)ScrollButtonPos / ScrollRange);
+            ScrolledFilesInfo.m_ScrollVerticalOffset = ceil(ceil(BiggestFileSize / (double)ScrolledFilesInfo.m_BytesOnString) - Strings_On_Screen) * 
+                ((double)ScrollButtonPos / ScrollRange);
             break;
         default:
             break;

@@ -18,3 +18,4 @@ BOOL ReadPage(HANDLE File, DWORD Granularity, LONGLONG FileSize, DWORDLONG OFFSE
 BOOL CompareAllFiles();
 
 HDC DrawPages(char* Page, DWORD CharOnPage, std::vector <LONGLONG> Differences, LONGLONG OFFSET, LONG BytesOnString, LONG HorizontalOffset, HDC DrawHDC, LONGLONG FileSize);
+BOOL Dlgproc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

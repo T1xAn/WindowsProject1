@@ -7,6 +7,9 @@
 #define DialogTextBox                   1006
 #define IDC_COMBOBOXEX1                 1007
 
+#define ID_EXIT 1998
+
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
